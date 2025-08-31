@@ -2,7 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // CONFIGURATION
     // ===============================================================
-    //  ❗❗❗ CRITICAL: PASTE YOUR WEB APP URL HERE ❗❗❗
+    //
+    //  ✅ YOUR WEB APP URL HAS BEEN ADDED HERE
+    //
     const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
     
     // ===============================================================
@@ -59,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================================================
-    // EVENT LISTENERS (UPDATED)
+    // EVENT LISTENERS
     // ===============================================================
     function setupEventListeners() {
         navLinks.forEach(link => {
@@ -89,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         navLogout.addEventListener('click', handleLogout);
 
         uploadForm.addEventListener('submit', handleUpload);
-        createFolderForm.addEventListener('submit', handleCreateFolder); // New listener
+        createFolderForm.addEventListener('submit', handleCreateFolder);
 
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
         document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
@@ -98,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================================================
-    // API CALLS (No changes in this section)
+    // API CALLS
     // ===============================================================
     async function apiCall(action, body = {}, method = 'GET') {
         showSpinner(true);
@@ -135,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // ===============================================================
-    // UI, THEME, & AUTH (No changes in these sections)
+    // UI, THEME, & AUTH
     // ===============================================================
     function navigateToSection(hash) { const targetId = hash.substring(1); sections.forEach(s => s.classList.toggle('d-none', s.id !== targetId)); navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === hash)); window.location.hash = hash; }
     function showSpinner(show) { loadingSpinner.classList.toggle('d-none', !show); }
@@ -148,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkSession() { const result = await apiCall('checkSession', { token: sessionToken }, 'POST'); if (result && result.success) updateAdminUI(true); else { sessionStorage.removeItem('adminToken'); updateAdminUI(false); } }
 
     // ===============================================================
-    // FOLDER & GALLERY LOGIC (UPDATED)
+    // FOLDER & GALLERY LOGIC
     // ===============================================================
     async function fetchFolderTree() {
         const data = await apiCall('getFolderTree', {}, 'GET');
@@ -156,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             folderTree = data;
             populateOccasionSelect();
             populateUploadFolderSelect();
-            populateParentFolderSelect(); // New function call
+            populateParentFolderSelect();
         }
     }
     
@@ -164,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateYearSelect() { yearSelect.innerHTML = '<option value="">-- Any Year --</option>'; yearSelect.disabled = true; subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>'; subfolderSelect.disabled = true; const occId = occasionSelect.value; if (!occId) return; const occ = folderTree.children.find(o => o.id === occId); if (occ && occ.children) { occ.children.forEach(y => yearSelect.add(new Option(y.name, y.id))); yearSelect.disabled = false; } }
     function populateSubfolderSelect() { subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>'; subfolderSelect.disabled = true; const yearId = yearSelect.value; if (!yearId) return; const occ = folderTree.children.find(o => o.id === occasionSelect.value); const year = occ?.children.find(y => y.id === yearId); if (year && year.children) { year.children.forEach(sf => subfolderSelect.add(new Option(sf.name, sf.id))); subfolderSelect.disabled = false; } }
     
-    // UPDATED to show all folders for upload
     function populateUploadFolderSelect() {
         folderSelectUpload.innerHTML = '<option value="">-- Select Destination --</option>';
         if (!folderTree) return;
@@ -179,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // NEW function to populate the "Create Inside" dropdown
     function populateParentFolderSelect() {
         parentFolderSelect.innerHTML = '';
         if (!folderTree) return;
@@ -200,9 +200,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function openVideoPlayer(file) { document.getElementById('video-title').textContent = file.name; const player = document.getElementById('video-player'); player.src = file.downloadUrl; document.getElementById('video-download').href = file.downloadUrl; document.getElementById('video-download').download = file.name; videoModal.show(); player.play(); }
     
     // ===============================================================
-    // UPLOAD & MANAGE LOGIC (UPDATED)
+    // UPLOAD & MANAGE LOGIC
     // ===============================================================
-    // NEW function to handle the create folder form submission
     async function handleCreateFolder(e) {
         e.preventDefault();
         const newFolderNameInput = document.getElementById('new-folder-name');
