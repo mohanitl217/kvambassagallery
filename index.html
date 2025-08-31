@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kendriya Vidyalaya Ambassa Gallery</title>
+    
+    <!-- Preconnect for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Kendriya Vidyalaya Ambassa Gallery - Discover and relive the memorable moments that define our vibrant school community">
+    <meta name="keywords" content="school, gallery, photos, videos, memories, events, Kendriya Vidyalaya, Ambassa">
+    <meta name="author" content="Kendriya Vidyalaya Ambassa">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Kendriya Vidyalaya Ambassa Gallery">
+    <meta property="og:description" content="Discover and relive the memorable moments that define our vibrant school community">
+    <meta property="og:type" content="website">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/%3E%3Ccircle fill='white' cx='12' cy='13' r='3'/%3E%3C/svg%3E">
+</head>
+<body data-theme="light">
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/b/ba/KVS_SVG_logo.svg/1200px-KVS_SVG_logo.svg.png" alt="KVS Logo" class="school-logo">
+                <div class="brand-text">
+                    <span class="brand-title">Kendriya Vidyalaya</span>
+                    <span class="brand-subtitle">Ambassa</span>
+                </div>
+            </div>
+            
+            <div class="navbar-menu">
+                <a href="#home" class="nav-link active" data-section="home" aria-current="page">
+                    <i data-lucide="home" aria-hidden="true"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#gallery" class="nav-link" data-section="gallery">
+                    <i data-lucide="image" aria-hidden="true"></i>
+                    <span>Gallery</span>
+                </a>
+                <a href="#upload" class="nav-link admin-only hidden" data-section="upload">
+                    <i data-lucide="upload" aria-hidden="true"></i>
+                    <span>Upload</span>
+                </a>
+                <a href="#about" class="nav-link" data-section="about">
+                    <i data-lucide="info" aria-hidden="true"></i>
+                    <span>About</span>
+                </a>
+                
+                <button class="nav-link login-only" id="login-btn" aria-label="Admin login">
+                    <i data-lucide="log-in" aria-hidden="true"></i>
+                    <span>Admin</span>
+                </button>
+                
+                <button class="nav-link admin-only hidden" id="logout-btn" aria-label="Logout">
+                    <i data-lucide="log-out" aria-hidden="true"></i>
+                    <span>Logout</span>
+                </button>
+                
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <i data-lucide="moon" class="moon" aria-hidden="true"></i>
+                    <i data-lucide="sun" class="sun hidden" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section active" role="main">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1 class="hero-title">Welcome to KV Ambassa Gallery</h1>
+                    <p class="hero-subtitle">Discover and relive the memorable moments that define our vibrant school community. From academic achievements to sporting triumphs, every memory tells our story of excellence.</p>
+                    
+                    <!-- Stats Preview -->
+                    <div class="stats-preview" id="stats-preview">
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i data-lucide="image" aria-hidden="true"></i>
+                            </div>
+                            <div class="stat-value" id="total-photos">
+                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+                            </div>
+                            <div class="stat-label">Photos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i data-lucide="video" aria-hidden="true"></i>
+                            </div>
+                            <div class="stat-value" id="total-videos">
+                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+                            </div>
+                            <div class="stat-label">Videos</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i data-lucide="hard-drive" aria-hidden="true"></i>
+                            </div>
+                            <div class="stat-value" id="total-size">
+                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+                            </div>
+                            <div class="stat-label">Total Size</div>
+                        </div>
+                    </div>
+                    
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-large" onclick="navigateToSection('gallery')" aria-label="Explore gallery">
+                            <i data-lucide="image" aria-hidden="true"></i>
+                            <span>Explore Gallery</span>
+                        </button>
+                        <button class="btn btn-ghost btn-large" onclick="navigateToSection('about')" aria-label="Learn more">
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                            <span>Learn More</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-background" aria-hidden="true"></div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery" class="section" role="main">
+            <div class="container">
+                <h2 class="section-title">Gallery</h2>
+                
+                <!-- Gallery Controls -->
+                <div class="gallery-controls" role="search" aria-label="Gallery filters and search">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="occasion-select">Occasion</label>
+                            <select id="occasion-select" class="select-input" aria-describedby="occasion-help">
+                                <option value="">Select Occasion</option>
+                            </select>
+                            <div id="occasion-help" class="sr-only">Choose an occasion to filter photos</div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="year-select">Year</label>
+                            <select id="year-select" class="select-input" disabled aria-describedby="year-help">
+                                <option value="">Any Year</option>
+                            </select>
+                            <div id="year-help" class="sr-only">Choose a year to filter photos</div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="subfolder-select">Album</label>
+                            <select id="subfolder-select" class="select-input" disabled aria-describedby="album-help">
+                                <option value="">Any Album</option>
+                            </select>
+                            <div id="album-help" class="sr-only">Choose a specific album</div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <button id="view-album-btn" class="btn btn-primary" disabled>
+                                <i data-lucide="eye" aria-hidden="true"></i>
+                                <span>View</span>
+                            </button>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <button id="refresh-cache-btn" class="btn btn-ghost" title="Refresh data">
+                                <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="search-row">
+                        <div class="search-input-wrapper">
+                            <i data-lucide="search" aria-hidden="true"></i>
+                            <input 
+                                type="text" 
+                                id="search-input" 
+                                placeholder="Search photos and videos..." 
+                                class="search-input"
+                                aria-label="Search photos and videos"
+                            >
+                        </div>
+                        
+                        <div class="view-options">
+                            <button class="view-toggle active" data-view="grid" aria-label="Grid view">
+                                <i data-lucide="grid" aria-hidden="true"></i>
+                            </button>
+                            <button class="view-toggle" data-view="list" aria-label="List view">
+                                <i data-lucide="list" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="gallery-progress" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="gallery-progress-fill"></div>
+                    </div>
+                    <div class="progress-text" id="gallery-progress-text">Loading gallery...</div>
+                </div>
+
+                <!-- Gallery Grid -->
+                <div id="gallery-grid" class="gallery-grid" role="region" aria-label="Photo gallery"></div>
+                
+                <!-- Empty State -->
+                <div id="empty-message" class="empty-state hidden" role="status">
+                    <i data-lucide="image" aria-hidden="true"></i>
+                    <h3>No photos found</h3>
+                    <p>This album is empty or no photos match your search. Try adjusting your filters or search terms.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section id="upload" class="section" role="main">
+            <div class="container">
+                <h2 class="section-title">Upload & Manage</h2>
+                
+                <div class="upload-layout">
+                    <!-- Upload Card -->
+                    <div class="upload-card main-upload">
+                        <div class="card-header">
+                            <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                            <h3>Upload Media</h3>
+                        </div>
+                        
+                        <form id="upload-form" class="upload-form" novalidate>
+                            <div class="form-group">
+                                <label for="folder-select-upload">Destination Folder *</label>
+                                <select id="folder-select-upload" class="select-input" required aria-describedby="folder-help">
+                                    <option value="">Select Destination</option>
+                                </select>
+                                <div id="folder-help" class="form-help">Choose where to upload your files</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="file-input">Choose Files *</label>
+                                <div class="file-drop-zone" id="file-drop-zone" tabindex="0" role="button" aria-describedby="file-help">
+                                    <input type="file" id="file-input" multiple accept="image/*,video/*" required aria-describedby="file-help">
+                                    <div class="drop-zone-content">
+                                        <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                                        <p><strong>Drop files here</strong> or click to browse</p>
+                                        <p class="text-muted">Supports: JPG, PNG, GIF, MP4, MOV, AVI (Max 50MB each)</p>
+                                    </div>
+                                </div>
+                                <div id="file-help" class="form-help">Select multiple files to upload at once</div>
+                            </div>
+                            
+                            <!-- File Preview -->
+                            <div id="file-preview-container" class="file-preview-container hidden">
+                                <div class="preview-header">
+                                    <h4>Selected Files</h4>
+                                    <button type="button" id="clear-files" class="btn btn-ghost btn-sm">Clear All</button>
+                                </div>
+                                <div id="file-preview-list" class="file-preview-list"></div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary btn-large" id="upload-submit">
+                                    <i data-lucide="upload" aria-hidden="true"></i>
+                                    <span>Upload Files</span>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- Upload Progress -->
+                        <div id="upload-progress-panel" class="upload-progress-panel hidden">
+                            <div class="progress-header">
+                                <h4>Uploading Files</h4>
+                                <button type="button" id="cancel-upload" class="btn btn-ghost btn-sm">Cancel</button>
+                            </div>
+                            
+                            <div class="overall-progress">
+                                <div class="progress-bar large">
+                                    <div class="progress-fill" id="overall-progress-bar"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span id="overall-percentage">0%</span>
+                                    <div id="upload-stats" class="upload-stats">
+                                        <span id="upload-speed">0 KB/s</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="file-progress-list" class="file-progress-list"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Create Folder Card -->
+                    <div class="upload-card">
+                        <div class="card-header">
+                            <i data-lucide="folder-plus" aria-hidden="true"></i>
+                            <h3>Create Folder</h3>
+                        </div>
+                        
+                        <form id="create-folder-form" class="create-folder-form" novalidate>
+                            <div class="form-group">
+                                <label for="parent-folder-select">Parent Folder</label>
+                                <select id="parent-folder-select" class="select-input">
+                                    <option value="">Root Directory</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="new-folder-name">Folder Name *</label>
+                                <input 
+                                    type="text" 
+                                    id="new-folder-name" 
+                                    class="text-input" 
+                                    required 
+                                    placeholder="Enter folder name"
+                                    pattern="[a-zA-Z0-9\s\-_]+"
+                                    title="Only letters, numbers, spaces, hyphens, and underscores allowed"
+                                >
+                                <div class="form-help">Enter a name for the new folder</div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i data-lucide="folder-plus" aria-hidden="true"></i>
+                                    <span>Create Folder</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Recent Uploads Card -->
+                    <div class="upload-card recent-uploads">
+                        <div class="card-header">
+                            <i data-lucide="clock" aria-hidden="true"></i>
+                            <h3>Recent Uploads</h3>
+                            <button type="button" id="refresh-recent" class="btn btn-ghost btn-sm" title="Refresh recent uploads">
+                                <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="recent-uploads-grid" class="recent-uploads-grid">
+                            <div class="empty-recent">
+                                <i data-lucide="upload" aria-hidden="true"></i>
+                                <p>No recent uploads</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section" role="main">
+            <div class="container">
+                <h2 class="section-title">About KV Ambassa</h2>
+                
+                <div class="about-content">
+                    <div class="about-hero">
+                        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/b/ba/KVS_SVG_logo.svg/1200px-KVS_SVG_logo.svg.png" alt="KVS Logo" class="about-logo">
+                        <div class="about-text">
+                            <h3>Kendriya Vidyalaya Ambassa</h3>
+                            <p class="lead">Excellence in Education, Character Building, and Holistic Development</p>
+                        </div>
+                    </div>
+                    
+                    <div class="about-grid">
+                        <div class="about-card">
+                            <div class="card-icon">
+                                <i data-lucide="graduation-cap" aria-hidden="true"></i>
+                            </div>
+                            <h4>Our Mission</h4>
+                            <p>To provide quality education and develop students into responsible citizens with strong moral values, leadership skills, and a commitment to excellence.</p>
+                        </div>
+                        
+                        <div class="about-card">
+                            <div class="card-icon">
+                                <i data-lucide="users" aria-hidden="true"></i>
+                            </div>
+                            <h4>Our Community</h4>
+                            <p>A vibrant community of students, teachers, and parents working together to create memorable experiences and lasting friendships.</p>
+                        </div>
+                        
+                        <div class="about-card">
+                            <div class="card-icon">
+                                <i data-lucide="trophy" aria-hidden="true"></i>
+                            </div>
+                            <h4>Our Achievements</h4>
+                            <p>Celebrating excellence in academics, sports, cultural activities, and community service that makes KV Ambassa a premier educational institution.</p>
+                        </div>
+                        
+                        <div class="about-card">
+                            <div class="card-icon">
+                                <i data-lucide="camera" aria-hidden="true"></i>
+                            </div>
+                            <h4>Gallery Purpose</h4>
+                            <p>This gallery preserves and shares the precious moments of our school life - from classroom activities to annual events, sports competitions to cultural celebrations.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" class="modal lightbox-modal hidden" role="dialog" aria-labelledby="lightbox-title" aria-modal="true">
+        <div class="modal-backdrop lightbox-backdrop"></div>
+        <div class="lightbox-container">
+            <div class="lightbox-header">
+                <div class="lightbox-info">
+                    <h3 id="lightbox-title">Image Title</h3>
+                    <p id="lightbox-filename">filename.jpg</p>
+                    <p id="lightbox-details">Details</p>
+                </div>
+                <div class="lightbox-counter" id="lightbox-counter">1 / 10</div>
+                <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+            
+            <div class="lightbox-content">
+                <img id="lightbox-image" class="lightbox-media" alt="" style="display: none;">
+                <video id="lightbox-video" class="lightbox-media" controls style="display: none;"></video>
+                
+                <button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="Previous image">
+                    <i data-lucide="chevron-left" aria-hidden="true"></i>
+                </button>
+                <button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="Next image">
+                    <i data-lucide="chevron-right" aria-hidden="true"></i>
+                </button>
+            </div>
+            
+            <div class="lightbox-controls">
+                <button class="lightbox-control" id="lightbox-download" aria-label="Download">
+                    <i data-lucide="download" aria-hidden="true"></i>
+                </button>
+                <button class="lightbox-control" id="lightbox-zoom-out" aria-label="Zoom out">
+                    <i data-lucide="zoom-out" aria-hidden="true"></i>
+                </button>
+                <button class="lightbox-control" id="lightbox-zoom-in" aria-label="Zoom in">
+                    <i data-lucide="zoom-in" aria-hidden="true"></i>
+                </button>
+                <button class="lightbox-control" id="lightbox-fullscreen" aria-label="Fullscreen">
+                    <i data-lucide="maximize" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal login-modal hidden" role="dialog" aria-labelledby="login-modal-title" aria-modal="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="login-modal-title">Admin Login</h3>
+                <button class="modal-close" id="login-modal-close" aria-label="Close login modal">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+            
+            <form id="login-form" class="login-form" novalidate>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="text-input" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="text-input" required autocomplete="current-password">
+                </div>
+                
+                <div id="login-error" class="error-message hidden"></div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i data-lucide="log-in" aria-hidden="true"></i>
+                        <span>Login</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="notification-toast" class="toast hidden" role="alert" aria-live="polite">
+        <div class="toast-icon" id="toast-icon">
+            <i data-lucide="check-circle" aria-hidden="true"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title" id="toast-title">Success</div>
+            <div class="toast-message" id="toast-message">Operation completed successfully</div>
+        </div>
+        <button class="toast-close" id="toast-close" aria-label="Close notification">
+            <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <!-- Error Boundary -->
+    <div id="error-boundary" class="error-boundary hidden">
+        <div class="error-content">
+            <div class="error-icon">
+                <i data-lucide="alert-triangle" aria-hidden="true"></i>
+            </div>
+            <h2>Something went wrong</h2>
+            <p id="error-message">An unexpected error occurred. Please try refreshing the page.</p>
+            <div class="error-actions">
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                    <span>Refresh Page</span>
+                </button>
+                <button class="btn btn-ghost" id="retry-initialization">
+                    <i data-lucide="play" aria-hidden="true"></i>
+                    <span>Retry</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="cache-manager.js"></script>
+    <script src="progress-bar.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Global navigation function
+        function navigateToSection(sectionId) {
+            if (window.gallery) {
+                window.gallery.navigateToSection(sectionId);
+            }
+        }
+    </script>
+</body>
+</html>
