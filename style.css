@@ -1,0 +1,104 @@
+/* General Styling */
+body {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.content-section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Navbar */
+.navbar-nav .nav-link {
+    transition: color 0.2s;
+}
+
+.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover {
+    color: #fff !important;
+    font-weight: 500;
+}
+
+/* Gallery Card */
+.gallery-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.gallery-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.card-img-container {
+    height: 200px;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-card .card-img-top {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-icon {
+    font-size: 4rem;
+    color: #6c757d;
+}
+
+.card-body {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-title {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+}
+
+/* Dark Mode */
+[data-bs-theme="dark"] {
+    background-color: #212529;
+    color: #dee2e6;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #343a40 !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: #adb5bd;
+}
+
+/* Stop video from playing when modal is closed */
+#videoModal.fade .modal-dialog {
+    transform: translate(0,-50px);
+    transition: transform .3s ease-out;
+}
+#videoModal.show .modal-dialog {
+    transform: none;
+}
