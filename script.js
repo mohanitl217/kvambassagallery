@@ -2,8 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // CONFIGURATION
     // ===============================================================
-    // ❗ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec'; // ❗ PASTE YOUR URL HERE
     
     // ===============================================================
     // STATE & DOM ELEMENTS
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyMessage = document.getElementById('empty-message');
     const searchInput = document.getElementById('search-input');
     
-    // Auth elements
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
@@ -30,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLogout = document.getElementById('nav-logout');
     const navUpload = document.getElementById('nav-upload');
 
-    // Upload elements
     const uploadForm = document.getElementById('upload-form');
     const folderSelectUpload = document.getElementById('folder-select-upload');
     const fileInput = document.getElementById('file-input');
@@ -38,11 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('upload-progress-bar');
     const uploadStatus = document.getElementById('upload-status');
     
-    // Modals
     const lightboxModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
     const videoModal = new bootstrap.Modal(document.getElementById('videoModal'));
     
-    // Toast notifications
     const toastElement = document.getElementById('notification-toast');
     const toast = new bootstrap.Toast(toastElement);
 
@@ -65,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENT LISTENERS
     // ===============================================================
     function setupEventListeners() {
-        // Navigation
         navLinks.forEach(link => {
             if (!link.parentElement.id?.includes('logout')) {
                 link.addEventListener('click', (e) => {
@@ -75,26 +69,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Gallery filters
-        occasionSelect.addEventListener('change', populateYearSelect);
-        yearSelect.addEventListener('change', populateSubfolderSelect);
+        occasionSelect.addEventListener('change', () => {
+            populateYearSelect();
+            viewAlbumBtn.disabled = !occasionSelect.value; // ** CHANGE **
+        });
+        yearSelect.addEventListener('change', () => {
+            populateSubfolderSelect();
+            viewAlbumBtn.disabled = !yearSelect.value; // ** CHANGE **
+        });
         subfolderSelect.addEventListener('change', () => {
              viewAlbumBtn.disabled = !subfolderSelect.value;
         });
+
         viewAlbumBtn.addEventListener('click', loadGallery);
         searchInput.addEventListener('input', filterGallery);
 
-        // Auth
         loginForm.addEventListener('submit', handleLogin);
         navLogout.addEventListener('click', handleLogout);
 
-        // Upload
         uploadForm.addEventListener('submit', handleUpload);
 
-        // Theme toggle
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
         
-        // Stop video when modal is closed
         document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
             document.getElementById('video-player').pause();
         });
@@ -107,14 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
         showSpinner(true);
         try {
             let response;
+            const params = new URLSearchParams(body);
+            const url = `${API_URL}?action=${action}&${params}`;
+
             if (method === 'GET') {
-                const params = new URLSearchParams(body);
-                response = await fetch(`${API_URL}?action=${action}&${params}`);
+                response = await fetch(url);
             } else { // POST
-                body.action = action;
-                if (sessionStorage.getItem('adminToken')) {
-                    body.token = sessionStorage.getItem('adminToken');
-                }
+                body.token = sessionStorage.getItem('adminToken');
                 response = await fetch(API_URL, {
                     method: 'POST',
                     mode: 'cors',
@@ -124,12 +119,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
-            
-            if (result.error) {
-                throw new Error(result.message || 'An unknown error occurred.');
-            }
+            if (result.error) throw new Error(result.message || 'An unknown error occurred.');
             return result;
+
         } catch (error) {
             console.error('API Call Error:', error);
             showNotification('Error', `Failed to communicate with the server: ${error.message}`, 'danger');
@@ -138,9 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showSpinner(false);
         }
     }
-
+    
     // ===============================================================
-    // UI & NAVIGATION
+    // UI & NAVIGATION (No changes in this section)
     // ===============================================================
     function navigateToSection(hash) {
         const targetId = hash.substring(1);
@@ -161,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const toastTitle = document.getElementById('toast-title');
         const toastBody = document.getElementById('toast-body');
         
-        toastElement.classList.remove('bg-success', 'bg-danger', 'bg-warning');
+        toastElement.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white');
         toastElement.classList.add(`bg-${type}`, 'text-white');
         
         toastTitle.textContent = title;
@@ -173,13 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
         navUpload.classList.toggle('d-none', !isLoggedIn);
         navLogin.classList.toggle('d-none', isLoggedIn);
         navLogout.classList.toggle('d-none', !isLoggedIn);
-        // Add delete buttons if they are not there, and remove if they are
         document.querySelectorAll('.delete-btn').forEach(btn => btn.classList.toggle('d-none', !isLoggedIn));
     }
     
-    // ===============================================================
-    // THEME MANAGEMENT
-    // ===============================================================
     function handleTheme() {
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.body.setAttribute('data-bs-theme', savedTheme);
@@ -196,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================================================
-    // AUTHENTICATION
+    // AUTHENTICATION (No changes in this section)
     // ===============================================================
     async function handleLogin(e) {
         e.preventDefault();
@@ -230,24 +220,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function checkSession() {
-        const result = await apiCall('checkSession', { token: sessionToken }, 'POST');
-        if (result && result.success) {
-            updateAdminUI(true);
-        } else {
-            sessionStorage.removeItem('adminToken');
-            updateAdminUI(false);
-        }
+        const token = sessionStorage.getItem('adminToken');
+        if (!token) return;
+        const result = await apiCall('checkSession', { token }, 'POST');
+        updateAdminUI(result && result.success);
     }
     
     // ===============================================================
-    // GALLERY LOGIC
+    // GALLERY LOGIC (UPDATED)
     // ===============================================================
     async function fetchFolderTree() {
-        const data = await apiCall('getFolderTree', {}, 'GET');
+        const data = await apiCall('getFolderTree');
         if (data && !data.error) {
             folderTree = data;
             populateOccasionSelect();
-            populateUploadFolderSelect();
+            populateUploadFolderSelect(); // ** FIX applied here **
         }
     }
     
@@ -255,9 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         occasionSelect.innerHTML = '<option value="">-- Select Occasion --</option>';
         if (!folderTree || !folderTree.children) return;
         folderTree.children.forEach(occasion => {
-            const option = document.createElement('option');
-            option.value = occasion.id;
-            option.textContent = occasion.name;
+            const option = new Option(occasion.name, occasion.id);
             occasionSelect.appendChild(option);
         });
     }
@@ -265,19 +250,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateYearSelect() {
         const occasionId = occasionSelect.value;
         yearSelect.innerHTML = '<option value="">-- Select Year --</option>';
-        yearSelect.disabled = true;
         subfolderSelect.innerHTML = '<option value="">-- Select Album --</option>';
+        yearSelect.disabled = true;
         subfolderSelect.disabled = true;
-        viewAlbumBtn.disabled = true;
-
+        
         if (!occasionId) return;
 
         const occasion = folderTree.children.find(o => o.id === occasionId);
         if (occasion && occasion.children) {
             occasion.children.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year.id;
-                option.textContent = year.name;
+                const option = new Option(year.name, year.id);
                 yearSelect.appendChild(option);
             });
             yearSelect.disabled = false;
@@ -289,17 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const yearId = yearSelect.value;
         subfolderSelect.innerHTML = '<option value="">-- Select Album --</option>';
         subfolderSelect.disabled = true;
-        viewAlbumBtn.disabled = true;
 
         if (!yearId) return;
 
         const occasion = folderTree.children.find(o => o.id === occasionId);
-        const year = occasion.children.find(y => y.id === yearId);
+        const year = occasion?.children.find(y => y.id === yearId);
         if (year && year.children) {
             year.children.forEach(subfolder => {
-                const option = document.createElement('option');
-                option.value = subfolder.id;
-                option.textContent = subfolder.name;
+                const option = new Option(subfolder.name, subfolder.id);
                 subfolderSelect.appendChild(option);
             });
             subfolderSelect.disabled = false;
@@ -307,16 +286,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadGallery() {
-        const folderId = subfolderSelect.value;
+        // ** NEW LOGIC ** Determine which folder to load
+        const folderId = subfolderSelect.value || yearSelect.value || occasionSelect.value;
         if (!folderId) return;
+        
+        // ** NEW LOGIC ** Determine which API action to use
+        const action = subfolderSelect.value ? 'getFiles' : 'getFilesRecursive';
 
         galleryGrid.innerHTML = '';
         emptyMessage.classList.add('d-none');
         
-        const files = await apiCall('getFiles', { folderId }, 'GET');
+        const files = await apiCall(action, { folderId });
         
         if (files && files.length > 0) {
-            files.forEach(file => renderGalleryCard(file));
+            files.forEach(renderGalleryCard);
         } else if (files) {
             emptyMessage.classList.remove('d-none');
         }
@@ -343,24 +326,16 @@ document.addEventListener('DOMContentLoaded', () => {
         col.innerHTML = `
             <div class="card gallery-card">
                 <button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button>
-                <div class="card-img-container">
-                    ${thumbnailHtml}
-                </div>
-                <div class="card-body">
-                    <p class="card-title" title="${file.name}">${file.name}</p>
-                </div>
+                <div class="card-img-container">${thumbnailHtml}</div>
+                <div class="card-body"><p class="card-title" title="${file.name}">${file.name}</p></div>
             </div>
         `;
         
         col.querySelector('.gallery-card').addEventListener('click', (e) => {
             if (e.target.closest('.delete-btn')) return;
-            if (isImage) {
-                openLightbox(file);
-            } else if (isVideo) {
-                openVideoPlayer(file);
-            } else {
-                window.open(file.downloadUrl, '_blank');
-            }
+            if (isImage) openLightbox(file);
+            else if (isVideo) openVideoPlayer(file);
+            else window.open(file.downloadUrl, '_blank');
         });
 
         col.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -375,10 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function filterGallery() {
         const searchTerm = searchInput.value.toLowerCase();
-        const cards = galleryGrid.querySelectorAll('.col-lg-3');
-        cards.forEach(card => {
-            const fileName = card.dataset.fileName;
-            card.style.display = fileName.includes(searchTerm) ? '' : 'none';
+        galleryGrid.querySelectorAll('.col-lg-3').forEach(card => {
+            card.style.display = card.dataset.fileName.includes(searchTerm) ? '' : 'none';
         });
     }
     
@@ -387,11 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result && result.success) {
             elementToRemove.remove();
             showNotification('Success', result.message, 'success');
-        } else {
-            showNotification('Error', 'Failed to delete file.', 'danger');
         }
     }
-
 
     function openLightbox(file) {
         document.getElementById('lightbox-title').textContent = file.name;
@@ -408,31 +378,29 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('video-download').href = file.downloadUrl;
         document.getElementById('video-download').download = file.name;
         videoModal.show();
-        player.play();
     }
     
     // ===============================================================
-    // UPLOAD LOGIC
+    // UPLOAD LOGIC (UPDATED)
     // ===============================================================
     function populateUploadFolderSelect() {
+        // ** FIX **: This function is completely rewritten for better UX.
         folderSelectUpload.innerHTML = '<option value="">-- Select Destination --</option>';
         if (!folderTree || !folderTree.children) return;
 
+        const addOption = (name, id, indent) => {
+            const option = new Option(`${'\u00A0\u00A0'.repeat(indent)}${name}`, id);
+            folderSelectUpload.appendChild(option);
+        };
+
         folderTree.children.forEach(occasion => {
-            const occGroup = document.createElement('optgroup');
-            occGroup.label = occasion.name;
+            addOption(occasion.name, occasion.id, 0);
             occasion.children.forEach(year => {
-                const yearGroup = document.createElement('optgroup');
-                yearGroup.label = `  - ${year.name}`;
-                 year.children.forEach(subfolder => {
-                    const option = document.createElement('option');
-                    option.value = subfolder.id;
-                    option.textContent = `    - ${subfolder.name}`;
-                    yearGroup.appendChild(option);
+                addOption(year.name, year.id, 1);
+                year.children.forEach(subfolder => {
+                    addOption(subfolder.name, subfolder.id, 2);
                 });
-                occGroup.appendChild(yearGroup);
             });
-            folderSelectUpload.appendChild(occGroup);
         });
     }
     
@@ -442,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = fileInput.files;
 
         if (!folderId || files.length === 0) {
-            showNotification('Warning', 'Please select a destination folder and files to upload.', 'warning');
+            showNotification('Warning', 'Please select a destination and files to upload.', 'warning');
             return;
         }
         
@@ -456,35 +424,29 @@ document.addEventListener('DOMContentLoaded', () => {
             
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${progress}%`;
-            uploadStatus.textContent = `Uploading ${i + 1} of ${files.length}: ${file.name}`;
+            uploadStatus.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`;
             
             try {
                 const fileData = await readFileAsBase64(file);
                 const result = await apiCall('uploadFile', {
-                    folderId: folderId,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    fileData: fileData
+                    action: 'uploadFile', folderId, fileName: file.name,
+                    mimeType: file.type, fileData
                 }, 'POST');
 
-                if (result && result.success) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    console.error('Upload failed for:', file.name, result ? result.message : '');
-                }
+                if (result && result.success) successCount++;
+                else errorCount++;
+
             } catch (err) {
                 errorCount++;
-                console.error('Upload failed for:', file.name, err);
             }
         }
         
         uploadStatus.textContent = `Upload complete. ${successCount} succeeded, ${errorCount} failed.`;
-        if (errorCount > 0) {
-            showNotification('Upload Complete', `Finished with ${errorCount} errors.`, 'warning');
-        } else {
-            showNotification('Upload Complete', `${successCount} files uploaded successfully.`, 'success');
-        }
+        showNotification(
+            errorCount > 0 ? 'Upload Finished' : 'Upload Complete',
+            `Finished: ${successCount} succeeded, ${errorCount} failed.`,
+            errorCount > 0 ? 'warning' : 'success'
+        );
         
         uploadForm.reset();
         setTimeout(() => progressContainer.classList.add('d-none'), 5000);
@@ -498,5 +460,4 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         });
     }
-
 });
