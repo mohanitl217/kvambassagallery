@@ -1,104 +1,137 @@
-/* General Styling */
-body {
-    transition: background-color 0.3s, color 0.3s;
+// ===============================================================
+// School Gallery Website - Backend (Google Apps Script) - UPDATED
+// ===============================================================
+
+const ROOT_FOLDER_ID = '1MUx0kA4SqrYl8reKE1mwBs2kRpeQzt3F'; // ❗ PASTE YOUR GOOGLE DRIVE FOLDER ID HERE
+
+// --- Credentials ---
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
+// --- Web App Entry Points ---
+
+function doGet(e) {
+  const action = e.parameter.action;
+  let response;
+  try {
+    const folderId = e.parameter.folderId;
+    if (action === 'getFolderTree') {
+      response = getFolderStructure(ROOT_FOLDER_ID);
+    } else if (action === 'getFiles') {
+      if (!folderId) throw new Error("Folder ID is required.");
+      response = listFiles(folderId);
+    } else if (action === 'getFilesRecursive') {
+      if (!folderId) throw new Error("Folder ID is required.");
+      response = getFilesRecursive(folderId);
+    } else {
+      throw new Error("Invalid GET action.");
+    }
+    return createJsonResponse(response);
+  } catch (error) {
+    return createJsonResponse({ error: true, message: error.message });
+  }
 }
 
-.content-section {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
+function doPost(e) {
+  const requestData = JSON.parse(e.postData.contents);
+  const action = requestData.action;
+  let response;
+  try {
+    if (action === 'login') {
+      response = handleLogin(requestData.username, requestData.password);
+    } else if (action === 'checkSession' || action === 'logout') {
+      response = checkAuth(requestData.token) ? handleLogout(requestData.token) : { success: false };
+    } else if (checkAuth(requestData.token)) {
+      if (action === 'uploadFile') response = handleFileUpload(requestData);
+      else if (action === 'createFolder') response = createNewFolder(requestData.parentFolderId, requestData.folderName);
+      else if (action === 'deleteFile') response = deleteItem(requestData.id, 'file');
+      else if (action === 'deleteFolder') response = deleteItem(requestData.id, 'folder');
+      else throw new Error("Invalid admin action.");
+    } else {
+      throw new Error("Authentication failed.");
+    }
+    return createJsonResponse(response);
+  } catch (error) {
+    return createJsonResponse({ error: true, message: error.message });
+  }
 }
 
-/* Navbar */
-.navbar-nav .nav-link {
-    transition: color 0.2s;
+function createJsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
-.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover {
-    color: #fff !important;
-    font-weight: 500;
+// ===============================================================
+//  Authentication & Session Management
+// ===============================================================
+function handleLogin(username, password) { if (username === ADMIN_USER && password === ADMIN_PASS) { const token = Utilities.getUuid(); PropertiesService.getUserProperties().setProperty(token, 'admin'); return { success: true, token: token }; } return { success: false, message: "Invalid credentials." }; }
+function handleLogout(token) { if (token) PropertiesService.getUserProperties().deleteProperty(token); return { success: true }; }
+function checkAuth(token) { return token && PropertiesService.getUserProperties().getProperty(token) === 'admin'; }
+
+// ===============================================================
+// Google Drive API Functions (UPDATED FOR THUMBNAILS)
+// ===============================================================
+const FILE_FIELDS = "id, name, mimeType, thumbnailLink, webViewLink";
+
+function getFileMetadata(file) {
+    const fileId = file.getId();
+    try {
+        // Use the advanced Drive API to get thumbnail links
+        const metadata = Drive.Files.get(fileId, { fields: FILE_FIELDS });
+        return {
+            id: fileId,
+            name: file.getName(),
+            mimeType: file.getMimeType(),
+            downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
+            // Use a direct image view link for the main content
+            viewUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
+            thumbnailUrl: metadata.thumbnailLink || null // The crucial thumbnail link
+        };
+    } catch (e) {
+        // Fallback if API fails for any reason
+        return {
+            id: fileId,
+            name: file.getName(),
+            mimeType: file.getMimeType(),
+            downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
+            viewUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
+            thumbnailUrl: null
+        };
+    }
 }
 
-/* Gallery Card */
-.gallery-card {
-    border-radius: 1rem;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-    position: relative;
+function listFiles(folderId) {
+    const folder = DriveApp.getFolderById(folderId);
+    const files = folder.getFiles();
+    const fileList = [];
+    while (files.hasNext()) {
+        fileList.push(getFileMetadata(files.next()));
+    }
+    return fileList;
 }
 
-.gallery-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+function traverseAndCollectFiles(folder, fileList) {
+    const files = folder.getFiles();
+    while (files.hasNext()) {
+        fileList.push(getFileMetadata(files.next()));
+    }
+    const subFolders = folder.getFolders();
+    while (subFolders.hasNext()) {
+        traverseAndCollectFiles(subFolders.next(), fileList);
+    }
 }
 
-.card-img-container {
-    height: 200px;
-    background-color: #e9ecef;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+function getFilesRecursive(folderId) {
+    const rootFolder = DriveApp.getFolderById(folderId);
+    const allFiles = [];
+    traverseAndCollectFiles(rootFolder, allFiles);
+    return allFiles;
 }
 
-.gallery-card .card-img-top {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
+// --- Folder Structure (No changes here) ---
+function getFolderStructure(folderId) { /* ... NO CHANGE TO THIS FUNCTION ... */ const rootFolder = DriveApp.getFolderById(folderId); const tree = { id: rootFolder.getId(), name: rootFolder.getName(), children: [] }; const occasionFolders = rootFolder.getFolders(); while (occasionFolders.hasNext()) { const occasionFolder = occasionFolders.next(); const occasionNode = { id: occasionFolder.getId(), name: occasionFolder.getName(), children: [] }; const yearFolders = occasionFolder.getFolders(); while (yearFolders.hasNext()) { const yearFolder = yearFolders.next(); const yearNode = { id: yearFolder.getId(), name: yearFolder.getName(), children: [] }; const subFolders = yearFolder.getFolders(); while (subFolders.hasNext()) { const subFolder = subFolders.next(); yearNode.children.push({ id: subFolder.getId(), name: subFolder.getName() }); } occasionNode.children.push(yearNode); } tree.children.push(occasionNode); } return tree; }
 
-.file-icon {
-    font-size: 4rem;
-    color: #6c757d;
-}
-
-.card-body {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.card-title {
-    font-size: 0.9rem;
-    margin-bottom: 0;
-}
-
-.delete-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 10;
-}
-
-/* Dark Mode */
-[data-bs-theme="dark"] {
-    background-color: #212529;
-    color: #dee2e6;
-}
-
-[data-bs-theme="dark"] .bg-light {
-    background-color: #343a40 !important;
-}
-
-[data-bs-theme="dark"] .modal-content {
-    background-color: #343a40;
-}
-
-[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select {
-    background-color: #495057;
-    border-color: #6c757d;
-    color: #f8f9fa;
-}
-
-[data-bs-theme="dark"] .form-control::placeholder {
-    color: #adb5bd;
-}
-
-/* Stop video from playing when modal is closed */
-#videoModal.fade .modal-dialog {
-    transform: translate(0,-50px);
-    transition: transform .3s ease-out;
-}
-#videoModal.show .modal-dialog {
-    transform: none;
-}
+// --- Modifying Data (No changes here) ---
+function handleFileUpload(data) { /* ... NO CHANGE TO THIS FUNCTION ... */ const { folderId, fileData, fileName, mimeType } = data; if (!folderId || !fileData || !fileName) throw new Error("Missing data for file upload."); const destinationFolder = DriveApp.getFolderById(folderId); const decodedData = Utilities.base64Decode(fileData.split(',')[1]); const blob = Utilities.newBlob(decodedData, mimeType, fileName); const newFile = destinationFolder.createFile(blob); logActivity(`File Uploaded: "${fileName}" to folder ID ${folderId}`); return { success: true, fileId: newFile.getId(), fileName: newFile.getName() }; }
+function createNewFolder(parentFolderId, folderName) { /* ... NO CHANGE TO THIS FUNCTION ... */ const parentFolder = DriveApp.getFolderById(parentFolderId); const newFolder = parentFolder.createFolder(folderName); logActivity(`Folder Created: "${folderName}" in parent ID ${parentFolderId}`); return { success: true, folderId: newFolder.getId(), folderName: newFolder.getName() }; }
+function deleteItem(id, type) { /* ... NO CHANGE TO THIS FUNCTION ... */ try { let name; if (type === 'file') { const file = DriveApp.getFileById(id); name = file.getName(); file.setTrashed(true); logActivity(`File Deleted: "${name}" (ID: ${id})`); } else if (type === 'folder') { const folder = DriveApp.getFolderById(id); name = folder.getName(); folder.setTrashed(true); logActivity(`Folder Deleted: "${name}" (ID: ${id})`); } else { throw new Error("Invalid item type for deletion."); } return { success: true, message: `${type} "${name}" deleted successfully.` }; } catch (e) { throw new Error(`Failed to delete ${type}: ${e.message}`); } }
+function logActivity(message) { /* ... NO CHANGE TO THIS FUNCTION ... */ try { const logSheetName = "ActivityLog"; const ss = SpreadsheetApp.openByUrl("YOUR_SPREADSHEET_URL_HERE") || SpreadsheetApp.create(logSheetName); let sheet = ss.getSheetByName(logSheetName); if (!sheet) { sheet = ss.insertSheet(logSheetName); sheet.appendRow(["Timestamp", "Activity"]); } sheet.appendRow([new Date(), message]); } catch (e) { console.error("Logging failed: " + e.message); } }
