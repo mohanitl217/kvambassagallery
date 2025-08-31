@@ -3,173 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Gallery</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <title>Modern School Gallery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body data-bs-theme="light">
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+<body data-theme="light">
+    <!-- Navigation -->
+    <nav class="navbar">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#"><i class="bi bi-camera-fill me-2"></i> School Gallery</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link active" href="#home" data-section="home">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#gallery" data-section="gallery">Gallery</a></li>
-                    <li class="nav-item d-none" id="nav-upload"><a class="nav-link" href="#upload" data-section="upload">Upload</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#about" data-section="about">About</a></li>
-                    <li class="nav-item" id="nav-login"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Admin Login</a></li>
-                    <li class="nav-item d-none" id="nav-logout"><a class="nav-link" href="#">Logout</a></li>
-                </ul>
-                <button class="btn btn-outline-light ms-2" id="theme-toggle"><i class="bi bi-moon-stars-fill"></i></button>
+            <div class="navbar-brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                    <circle cx="12" cy="13" r="3"></circle>
+                </svg>
+                <span>School Gallery</span>
+            </div>
+            <div class="navbar-menu">
+                <a href="#home" class="nav-link active" data-section="home">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9,22 9,12 15,12 15,22"></polyline>
+                    </svg>
+                    Home
+                </a>
+                <a href="#gallery" class="nav-link" data-section="gallery">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21,15 16,10 5,21"></polyline>
+                    </svg>
+                    Gallery
+                </a>
+                <a href="#upload" class="nav-link admin-only hidden" data-section="upload">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Upload
+                </a>
+                <a href="#about" class="nav-link" data-section="about">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <path d="M12 17h.01"></path>
+                    </svg>
+                    About
+                </a>
+                <button class="nav-link login-only" id="login-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10,17 15,12 10,7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                    Admin
+                </button>
+                <button class="nav-link admin-only hidden" id="logout-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
+                <button class="theme-toggle" id="theme-toggle">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="moon">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sun hidden">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                    </svg>
+                </button>
             </div>
         </div>
     </nav>
 
-    <main class="container mt-4">
-        <section id="home" class="content-section text-center">
-            <div class="p-5 mb-4 bg-light rounded-3">
-                <div class="container-fluid py-5">
-                    <h1 class="display-5 fw-bold">Welcome to Our School Gallery</h1>
-                    <p class="fs-4">Relive the memorable moments and achievements of our students and staff.</p>
-                    <button class="btn btn-primary btn-lg" type="button" onclick="document.querySelector('a[data-section=gallery]').click()">Explore Gallery</button>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1 class="hero-title">Welcome to Our School Gallery</h1>
+                    <p class="hero-subtitle">Discover and relive the memorable moments that define our vibrant school community</p>
+                    <button class="btn btn-primary btn-large" onclick="navigateToSection('gallery')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21,15 16,10 5,21"></polyline>
+                        </svg>
+                        Explore Gallery
+                    </button>
+                </div>
+                <div class="hero-background"></div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery" class="section">
+            <div class="container">
+                <h2 class="section-title">Gallery</h2>
+                
+                <!-- Gallery Controls -->
+                <div class="gallery-controls">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="occasion-select">Occasion</label>
+                            <select id="occasion-select" class="select-input">
+                                <option value="">Select Occasion</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="year-select">Year</label>
+                            <select id="year-select" class="select-input" disabled>
+                                <option value="">Any Year</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="subfolder-select">Album</label>
+                            <select id="subfolder-select" class="select-input" disabled>
+                                <option value="">Any Album</option>
+                            </select>
+                        </div>
+                        <button id="view-album-btn" class="btn btn-primary" disabled>View</button>
+                    </div>
+                    <div class="search-row">
+                        <div class="search-input-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input type="text" id="search-input" placeholder="Search photos and videos..." class="search-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gallery Grid -->
+                <div id="gallery-grid" class="gallery-grid"></div>
+                
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="loading-spinner hidden">
+                    <div class="spinner"></div>
+                    <p>Loading amazing memories...</p>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="empty-message" class="empty-state hidden">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21,15 16,10 5,21"></polyline>
+                    </svg>
+                    <h3>No photos found</h3>
+                    <p>This album is empty. Start uploading some amazing memories!</p>
                 </div>
             </div>
         </section>
 
-        <section id="gallery" class="content-section d-none">
-            <h2 class="text-center mb-4">Gallery</h2>
-            <div class="row g-3 align-items-end p-3 bg-light rounded-3 mb-4 shadow-sm">
-                <div class="col-md-3">
-                    <label for="occasion-select" class="form-label">Occasion</label>
-                    <select id="occasion-select" class="form-select"></select>
-                </div>
-                <div class="col-md-3">
-                    <label for="year-select" class="form-label">Year</label>
-                    <select id="year-select" class="form-select" disabled></select>
-                </div>
-                <div class="col-md-4">
-                    <label for="subfolder-select" class="form-label">Album</label>
-                    <select id="subfolder-select" class="form-select" disabled></select>
-                </div>
-                <div class="col-md-2">
-                     <button id="view-album-btn" class="btn btn-primary w-100" disabled>View</button>
-                </div>
-            </div>
-            <div class="row g-3 mb-4">
-                 <div class="col-md-12">
-                    <input type="text" id="search-input" class="form-control" placeholder="Search by file name...">
-                </div>
-            </div>
-            <div id="gallery-grid" class="row g-3"></div>
-            <div id="loading-spinner" class="text-center my-5 d-none">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-            <p id="empty-message" class="text-center text-muted d-none">This album is empty. 텅 비었다!</p>
-        </section>
-
-        <section id="upload" class="content-section d-none">
-            <h2 class="text-center mb-4">Upload & Manage</h2>
-             <div class="row">
-                <div class="col-lg-7">
-                    <div class="card shadow-sm mb-4">
-                         <div class="card-header"><h5 class="mb-0"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload Media</h5></div>
-                        <div class="card-body">
-                            <form id="upload-form">
-                                <div class="mb-3">
-                                    <label for="folder-select-upload" class="form-label">Select Destination</label>
-                                    <select id="folder-select-upload" class="form-select" required></select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="file-input" class="form-label">Choose Files (Images/Videos)</label>
-                                    <input type="file" id="file-input" class="form-control" multiple required>
-                                </div>
-                                <button type="submit" class="btn btn-success w-100">Start Upload</button>
-                            </form>
-                            <div id="upload-progress-container" class="mt-4 d-none">
-                                <div class="progress">
-                                    <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div>
-                                </div>
-                                <p id="upload-status" class="mt-2 text-center"></p>
+        <!-- Upload Section -->
+        <section id="upload" class="section">
+            <div class="container">
+                <h2 class="section-title">Upload & Manage</h2>
+                
+                <div class="upload-grid">
+                    <!-- File Upload Card -->
+                    <div class="upload-card">
+                        <div class="card-header">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <h3>Upload Media</h3>
+                        </div>
+                        <form id="upload-form" class="upload-form">
+                            <div class="form-group">
+                                <label for="folder-select-upload">Destination Folder</label>
+                                <select id="folder-select-upload" class="select-input" required>
+                                    <option value="">Select Destination</option>
+                                </select>
                             </div>
+                            <div class="form-group">
+                                <label for="file-input">Choose Files</label>
+                                <div class="file-drop-zone" id="file-drop-zone">
+                                    <input type="file" id="file-input" multiple accept="image/*,video/*" required>
+                                    <div class="drop-zone-content">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7,10 12,15 17,10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        <p>Drop files here or click to browse</p>
+                                        <span>Supports images and videos</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-full">Start Upload</button>
+                        </form>
+                        
+                        <!-- Upload Progress -->
+                        <div id="upload-progress-container" class="progress-container hidden">
+                            <div class="progress-bar">
+                                <div id="upload-progress-bar" class="progress-fill"></div>
+                            </div>
+                            <p id="upload-status" class="progress-status">Preparing upload...</p>
                         </div>
                     </div>
-                </div>
-                <div class="col-lg-5">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header"><h5 class="mb-0"><i class="bi bi-folder-plus me-2"></i>Manage Folders</h5></div>
-                        <div class="card-body">
-                            <p class="text-muted small">Create a new Occasion, Year, or Album folder.</p>
-                            <form id="create-folder-form">
-                                <div class="mb-3">
-                                    <label for="parent-folder-select" class="form-label">Create Inside</label>
-                                    <select id="parent-folder-select" class="form-select" required></select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="new-folder-name" class="form-label">New Folder Name</label>
-                                    <input type="text" id="new-folder-name" class="form-control" placeholder="e.g., Sports Day, 2025, etc." required>
-                                </div>
-                                <button type="submit" class="btn btn-info w-100">Create Folder</button>
-                            </form>
+
+                    <!-- Folder Management Card -->
+                    <div class="upload-card">
+                        <div class="card-header">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                <line x1="12" y1="11" x2="12" y2="17"></line>
+                                <line x1="9" y1="14" x2="15" y2="14"></line>
+                            </svg>
+                            <h3>Manage Folders</h3>
                         </div>
+                        <form id="create-folder-form" class="upload-form">
+                            <div class="form-group">
+                                <label for="parent-folder-select">Create Inside</label>
+                                <select id="parent-folder-select" class="select-input" required>
+                                    <option value="">Select Parent Folder</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-folder-name">Folder Name</label>
+                                <input type="text" id="new-folder-name" class="text-input" placeholder="e.g., Sports Day, 2025..." required>
+                            </div>
+                            <button type="submit" class="btn btn-secondary btn-full">Create Folder</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="about" class="content-section d-none">
-            <h2 class="text-center mb-4">About Us</h2>
-            <p class="lead text-center">This gallery is a digital archive of our school's vibrant life. From sports days to annual functions, we capture and preserve every precious moment.</p>
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="container">
+                <div class="about-content">
+                    <h2 class="section-title">About Our Gallery</h2>
+                    <div class="about-text">
+                        <p>Welcome to our digital archive that captures the essence of school life. From academic achievements to cultural celebrations, every moment tells a story of growth, friendship, and discovery.</p>
+                        <p>Our gallery serves as a visual timeline of memories, preserving the vibrant spirit of our educational community for current students, alumni, and future generations to cherish.</p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-photos">0</div>
+                            <div class="stat-label">Photos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-albums">0</div>
+                            <div class="stat-label">Albums</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-events">0</div>
+                            <div class="stat-label">Events</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </main>
 
-    <div class="modal fade" id="loginModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Admin Login</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <form id="login-form">
-                        <div class="mb-3"><label for="username" class="form-label">Username</label><input type="text" class="form-control" id="username" required value="admin"></div>
-                        <div class="mb-3"><label for="password" class="form-label">Password</label><input type="password" class="form-control" id="password" required value="admin123"></div>
-                        <button type="submit" class="btn btn-primary w-100">Login</button>
-                    </form>
-                    <div id="login-error" class="alert alert-danger mt-3 d-none"></div>
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Admin Login</h3>
+                <button class="modal-close" id="login-modal-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="text-input" required value="admin">
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="lightboxModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="lightbox-title">Image View</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body text-center"><img id="lightbox-img" src="" class="img-fluid" alt="Gallery Image"></div>
-                <div class="modal-footer"><a id="lightbox-download" href="#" class="btn btn-primary" download><i class="bi bi-download me-2"></i>Download</a></div>
-            </div>
-        </div>
-    </div>
-    <div class="modal fade" id="videoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title" id="video-title">Video Player</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body"><video id="video-player" class="w-100" controls></video></div>
-                <div class="modal-footer"><a id="video-download" href="#" class="btn btn-primary" download><i class="bi bi-download me-2"></i>Download</a></div>
-            </div>
-        </div>
-    </div>
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header"><strong class="me-auto" id="toast-title">Notification</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div>
-            <div class="toast-body" id="toast-body"></div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="text-input" required value="admin123">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+            </form>
+            <div id="login-error" class="error-message hidden"></div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" class="modal lightbox-modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="lightbox-content">
+            <div class="lightbox-header">
+                <h3 id="lightbox-title">Image View</h3>
+                <div class="lightbox-controls">
+                    <button id="lightbox-download" class="btn btn-ghost">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download
+                    </button>
+                    <button class="modal-close" id="lightbox-close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="lightbox-body">
+                <button class="lightbox-nav lightbox-prev" id="lightbox-prev">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                    </svg>
+                </button>
+                <div class="lightbox-media-container">
+                    <img id="lightbox-img" src="" alt="Gallery Image" class="lightbox-media">
+                    <video id="lightbox-video" class="lightbox-media hidden" controls></video>
+                </div>
+                <button class="lightbox-nav lightbox-next" id="lightbox-next">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="toast hidden">
+        <div class="toast-content">
+            <div class="toast-icon" id="toast-icon"></div>
+            <div class="toast-text">
+                <div class="toast-title" id="toast-title"></div>
+                <div class="toast-message" id="toast-message"></div>
+            </div>
+        </div>
+        <button class="toast-close" id="toast-close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
