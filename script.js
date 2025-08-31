@@ -1,15 +1,11 @@
 // ===============================================================
-// Modern School Gallery - Enhanced Main Script with Error Handling
+// Modern School Gallery - Enhanced Frontend JavaScript
 // ===============================================================
 
 class ModernSchoolGallery {
     constructor() {
-        // Configuration with fallback
+        // Configuration
         this.API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
-        
-        // Initialize managers
-        this.cache = new CacheManager();
-        this.progressBars = new Map();
         
         // State management
         this.folderTree = null;
@@ -23,276 +19,36 @@ class ModernSchoolGallery {
         this.recentUploads = JSON.parse(localStorage.getItem('recentUploads') || '[]');
         this.uploadInProgress = false;
         this.currentUploadController = null;
-        this.retryCount = 0;
-        this.maxRetries = 3;
-        this.initializationAttempts = 0;
         
         // UI elements cache
         this.elements = {};
         
-        // Bind methods
-        this.handleError = this.handleError.bind(this);
-        this.retryInitialization = this.retryInitialization.bind(this);
-        this.navigateToSection = this.navigateToSection.bind(this);
-        
-        // Initialize application with error boundary
-        this.initializeWithErrorHandling();
-    }
-
-    async initializeWithErrorHandling() {
-        try {
-            await this.init();
-        } catch (error) {
-            console.error('Critical initialization error:', error);
-            this.showErrorBoundary(error);
-        }
+        // Initialize application
+        this.init();
     }
 
     async init() {
         try {
-            console.log('Initializing Kendriya Vidyalaya Gallery...');
-            
-            // Show initialization progress
-            this.showInitializationProgress();
-            
-            // Cache elements first
             this.cacheElements();
-            
-            // Setup basic event listeners
             this.setupEventListeners();
-            
-            // Handle theme
             this.handleTheme();
             
-            // Update progress
-            this.updateInitProgress(25, 'Setting up authentication...');
-            
-            // Check session
             if (this.sessionToken) {
                 await this.checkSession();
             }
             
-            // Update progress
-            this.updateInitProgress(50, 'Loading folder structure...');
-            
-            // Fetch folder tree with caching
-            await this.fetchFolderTreeWithCache();
-            
-            // Update progress
-            this.updateInitProgress(75, 'Loading statistics...');
-            
-            // Update stats with loading indicators
-            await this.updateStatsWithProgress();
-            
-            // Render recent uploads
+            await this.fetchFolderTree();
+            await this.updateStats();
             this.renderRecentUploads();
-            
-            // Update progress
-            this.updateInitProgress(90, 'Finalizing setup...');
             
             // Handle initial navigation
             const initialSection = window.location.hash.slice(1) || 'home';
             this.navigateToSection(initialSection);
             
-            // Complete initialization
-            this.updateInitProgress(100, 'Gallery ready!');
-            
-            setTimeout(() => {
-                this.hideInitializationProgress();
-            }, 1000);
-            
-            console.log('Kendriya Vidyalaya Gallery initialized successfully');
-            this.showNotification('Success', 'Gallery loaded successfully!', 'success');
-            
+            console.log('Modern School Gallery initialized successfully');
         } catch (error) {
             console.error('Failed to initialize gallery:', error);
-            
-            // Increment attempt counter
-            this.initializationAttempts++;
-            
-            if (this.initializationAttempts < this.maxRetries) {
-                console.log(`Retrying initialization (attempt ${this.initializationAttempts}/${this.maxRetries})...`);
-                this.showRetryNotification();
-                
-                // Exponential backoff
-                const delay = Math.pow(2, this.initializationAttempts) * 1000;
-                setTimeout(() => {
-                    this.retryInitialization();
-                }, delay);
-            } else {
-                this.hideInitializationProgress();
-                this.handleInitializationFailure(error);
-            }
-        }
-    }
-
-    showInitializationProgress() {
-        const container = document.createElement('div');
-        container.id = 'initialization-progress';
-        container.className = 'initialization-progress';
-        container.innerHTML = `
-            <div class="init-progress-content">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb b/ba/KVS_SVG_logo.svg/1200px-KVS_SVG_logo.svg.png" 
-                     alt="KVS Logo" class="init-logo">
-                <h2>Kendriya Vidyalaya Ambassa</h2>
-                <p>Loading Gallery...</p>
-                <div class="init-progress-bar">
-                    <div class="init-progress-fill" id="init-progress-fill"></div>
-                </div>
-                <div class="init-progress-text" id="init-progress-text">Initializing...</div>
-            </div>
-        `;
-        
-        // Add styles
-        container.style.cssText = `
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(135deg, var(--primary-50), var(--secondary-50));
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-        `;
-        
-        const content = container.querySelector('.init-progress-content');
-        content.style.cssText = `
-            text-align: center;
-            background: white;
-            padding: 3rem;
-            border-radius: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            max-width: 400px;
-            width: 90%;
-        `;
-        
-        const logo = container.querySelector('.init-logo');
-        logo.style.cssText = `
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            margin-bottom: 1.5rem;
-        `;
-        
-        const progressBar = container.querySelector('.init-progress-bar');
-        progressBar.style.cssText = `
-            width: 100%;
-            height: 12px;
-            background: var(--gray-200);
-            border-radius: 9999px;
-            overflow: hidden;
-            margin: 1.5rem 0 1rem;
-        `;
-        
-        const progressFill = container.querySelector('.init-progress-fill');
-        progressFill.style.cssText = `
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--kv-primary), var(--primary-500));
-            border-radius: 9999px;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        `;
-        
-        document.body.appendChild(container);
-    }
-
-    updateInitProgress(percentage, text) {
-        const fill = document.getElementById('init-progress-fill');
-        const textEl = document.getElementById('init-progress-text');
-        
-        if (fill) {
-            fill.style.width = `${percentage}%`;
-        }
-        
-        if (textEl) {
-            textEl.textContent = text;
-        }
-    }
-
-    hideInitializationProgress() {
-        const container = document.getElementById('initialization-progress');
-        if (container) {
-            container.style.opacity = '0';
-            container.style.transform = 'scale(0.95)';
-            container.style.transition = 'all 0.3s ease-out';
-            
-            setTimeout(() => {
-                container.remove();
-            }, 300);
-        }
-    }
-
-    showRetryNotification() {
-        this.showNotification(
-            'Retrying...',
-            `Loading failed. Attempting retry ${this.initializationAttempts}/${this.maxRetries}...`,
-            'warning'
-        );
-    }
-
-    async retryInitialization() {
-        // Clear any existing error UI
-        this.hideErrorBoundary();
-        
-        // Reset state
-        this.folderTree = null;
-        this.galleryFiles = [];
-        this.filteredFiles = [];
-        
-        // Try initialization again
-        await this.init();
-    }
-
-    handleInitializationFailure(error) {
-        console.error('All initialization attempts failed:', error);
-        
-        // Show detailed error information
-        const errorMessage = this.getDetailedErrorMessage(error);
-        this.showErrorBoundary(error, errorMessage);
-        
-        // Show persistent error notification
-        this.showNotification(
-            'Initialization Failed',
-            'Unable to load the gallery. Please check your connection and try again.',
-            'error',
-            0 // Don't auto-hide
-        );
-    }
-
-    getDetailedErrorMessage(error) {
-        if (!navigator.onLine) {
-            return 'No internet connection detected. Please check your network connection and try again.';
-        }
-        
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            return 'Unable to connect to the server. The service may be temporarily unavailable.';
-        }
-        
-        if (error.status === 403) {
-            return 'Access denied. The gallery service may require authentication.';
-        }
-        
-        if (error.status === 500) {
-            return 'Server error occurred. Please try again later.';
-        }
-        
-        return error.message || 'An unexpected error occurred during initialization.';
-    }
-
-    showErrorBoundary(error, customMessage = null) {
-        const errorBoundary = document.getElementById('error-boundary');
-        const errorMessage = document.getElementById('error-message');
-        
-        if (errorBoundary && errorMessage) {
-            errorMessage.textContent = customMessage || this.getDetailedErrorMessage(error);
-            errorBoundary.classList.remove('hidden');
-        }
-    }
-
-    hideErrorBoundary() {
-        const errorBoundary = document.getElementById('error-boundary');
-        if (errorBoundary) {
-            errorBoundary.classList.add('hidden');
+            this.showNotification('Error', 'Failed to initialize gallery. Please refresh the page.', 'error');
         }
     }
 
@@ -312,11 +68,10 @@ class ModernSchoolGallery {
         this.elements.viewAlbumBtn = document.getElementById('view-album-btn');
         this.elements.searchInput = document.getElementById('search-input');
         this.elements.viewToggles = document.querySelectorAll('.view-toggle');
-        this.elements.refreshCacheBtn = document.getElementById('refresh-cache-btn');
         
         // Gallery display
         this.elements.galleryGrid = document.getElementById('gallery-grid');
-        this.elements.galleryProgress = document.getElementById('gallery-progress');
+        this.elements.loadingSpinner = document.getElementById('loading-spinner');
         this.elements.emptyMessage = document.getElementById('empty-message');
         
         // Authentication
@@ -338,10 +93,12 @@ class ModernSchoolGallery {
         this.elements.fileDropZone = document.getElementById('file-drop-zone');
         this.elements.newFolderName = document.getElementById('new-folder-name');
         
-        // File preview and progress
+        // File preview
         this.elements.filePreviewContainer = document.getElementById('file-preview-container');
         this.elements.filePreviewList = document.getElementById('file-preview-list');
         this.elements.clearFilesBtn = document.getElementById('clear-files');
+        
+        // Upload progress
         this.elements.uploadProgressPanel = document.getElementById('upload-progress-panel');
         this.elements.overallProgressBar = document.getElementById('overall-progress-bar');
         this.elements.overallPercentage = document.getElementById('overall-percentage');
@@ -371,10 +128,12 @@ class ModernSchoolGallery {
         this.elements.lightboxFullscreen = document.getElementById('lightbox-fullscreen');
         this.elements.lightboxBackdrop = document.querySelector('.lightbox-backdrop');
         
-        // Theme and notifications
+        // Theme toggle
         this.elements.themeToggle = document.getElementById('theme-toggle');
         this.elements.moonIcon = document.querySelector('.moon');
         this.elements.sunIcon = document.querySelector('.sun');
+        
+        // Toast notifications
         this.elements.toast = document.getElementById('notification-toast');
         this.elements.toastIcon = document.getElementById('toast-icon');
         this.elements.toastTitle = document.getElementById('toast-title');
@@ -389,14 +148,11 @@ class ModernSchoolGallery {
         // Admin-only elements
         this.elements.adminOnly = document.querySelectorAll('.admin-only');
         this.elements.loginOnly = document.querySelectorAll('.login-only');
-        
-        // Error boundary
-        this.elements.retryBtn = document.getElementById('retry-initialization');
     }
 
     setupEventListeners() {
         // Navigation
-        this.elements.navLinks?.forEach(link => {
+        this.elements.navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const section = link.dataset.section;
@@ -405,15 +161,24 @@ class ModernSchoolGallery {
         });
 
         // Gallery controls
-        this.elements.occasionSelect?.addEventListener('change', () => this.populateYearSelect());
-        this.elements.yearSelect?.addEventListener('change', () => this.populateSubfolderSelect());
-        this.elements.subfolderSelect?.addEventListener('change', () => this.updateViewButton());
-        this.elements.viewAlbumBtn?.addEventListener('click', () => this.loadGallery());
-        this.elements.searchInput?.addEventListener('input', (e) => this.filterGallery(e.target.value));
-        this.elements.refreshCacheBtn?.addEventListener('click', () => this.refreshCache());
+        if (this.elements.occasionSelect) {
+            this.elements.occasionSelect.addEventListener('change', () => this.populateYearSelect());
+        }
+        if (this.elements.yearSelect) {
+            this.elements.yearSelect.addEventListener('change', () => this.populateSubfolderSelect());
+        }
+        if (this.elements.subfolderSelect) {
+            this.elements.subfolderSelect.addEventListener('change', () => this.updateViewButton());
+        }
+        if (this.elements.viewAlbumBtn) {
+            this.elements.viewAlbumBtn.addEventListener('click', () => this.loadGallery());
+        }
+        if (this.elements.searchInput) {
+            this.elements.searchInput.addEventListener('input', (e) => this.filterGallery(e.target.value));
+        }
 
         // View toggles
-        this.elements.viewToggles?.forEach(toggle => {
+        this.elements.viewToggles.forEach(toggle => {
             toggle.addEventListener('click', () => {
                 const view = toggle.dataset.view;
                 this.setView(view);
@@ -421,38 +186,73 @@ class ModernSchoolGallery {
         });
 
         // Authentication
-        this.elements.loginBtn?.addEventListener('click', () => this.showLoginModal());
-        this.elements.logoutBtn?.addEventListener('click', () => this.handleLogout());
-        this.elements.loginForm?.addEventListener('submit', (e) => this.handleLogin(e));
-        this.elements.loginModalClose?.addEventListener('click', () => this.hideLoginModal());
+        if (this.elements.loginBtn) {
+            this.elements.loginBtn.addEventListener('click', () => this.showLoginModal());
+        }
+        if (this.elements.logoutBtn) {
+            this.elements.logoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+        if (this.elements.loginForm) {
+            this.elements.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+        }
+        if (this.elements.loginModalClose) {
+            this.elements.loginModalClose.addEventListener('click', () => this.hideLoginModal());
+        }
 
         // Upload
-        this.elements.uploadForm?.addEventListener('submit', (e) => this.handleUpload(e));
-        this.elements.createFolderForm?.addEventListener('submit', (e) => this.handleCreateFolder(e));
-        this.elements.clearFilesBtn?.addEventListener('click', () => this.clearFileSelection());
-        this.elements.cancelUpload?.addEventListener('click', () => this.cancelUpload());
-        this.elements.refreshRecent?.addEventListener('click', () => this.renderRecentUploads());
+        if (this.elements.uploadForm) {
+            this.elements.uploadForm.addEventListener('submit', (e) => this.handleUpload(e));
+        }
+        if (this.elements.createFolderForm) {
+            this.elements.createFolderForm.addEventListener('submit', (e) => this.handleCreateFolder(e));
+        }
+        if (this.elements.clearFilesBtn) {
+            this.elements.clearFilesBtn.addEventListener('click', () => this.clearFileSelection());
+        }
+        if (this.elements.cancelUpload) {
+            this.elements.cancelUpload.addEventListener('click', () => this.cancelUpload());
+        }
+        if (this.elements.refreshRecent) {
+            this.elements.refreshRecent.addEventListener('click', () => this.renderRecentUploads());
+        }
         
         this.setupFileDropZone();
 
         // Lightbox
-        this.elements.lightboxClose?.addEventListener('click', () => this.hideLightbox());
-        this.elements.lightboxPrev?.addEventListener('click', () => this.navigateLightbox(-1));
-        this.elements.lightboxNext?.addEventListener('click', () => this.navigateLightbox(1));
-        this.elements.lightboxDownload?.addEventListener('click', () => this.downloadCurrentImage());
-        this.elements.lightboxZoomIn?.addEventListener('click', () => this.zoomImage(1.2));
-        this.elements.lightboxZoomOut?.addEventListener('click', () => this.zoomImage(0.8));
-        this.elements.lightboxFullscreen?.addEventListener('click', () => this.toggleFullscreen());
-        this.elements.lightboxBackdrop?.addEventListener('click', () => this.hideLightbox());
+        if (this.elements.lightboxClose) {
+            this.elements.lightboxClose.addEventListener('click', () => this.hideLightbox());
+        }
+        if (this.elements.lightboxPrev) {
+            this.elements.lightboxPrev.addEventListener('click', () => this.navigateLightbox(-1));
+        }
+        if (this.elements.lightboxNext) {
+            this.elements.lightboxNext.addEventListener('click', () => this.navigateLightbox(1));
+        }
+        if (this.elements.lightboxDownload) {
+            this.elements.lightboxDownload.addEventListener('click', () => this.downloadCurrentImage());
+        }
+        if (this.elements.lightboxZoomIn) {
+            this.elements.lightboxZoomIn.addEventListener('click', () => this.zoomImage(1.2));
+        }
+        if (this.elements.lightboxZoomOut) {
+            this.elements.lightboxZoomOut.addEventListener('click', () => this.zoomImage(0.8));
+        }
+        if (this.elements.lightboxFullscreen) {
+            this.elements.lightboxFullscreen.addEventListener('click', () => this.toggleFullscreen());
+        }
+        if (this.elements.lightboxBackdrop) {
+            this.elements.lightboxBackdrop.addEventListener('click', () => this.hideLightbox());
+        }
 
         // Theme toggle
-        this.elements.themeToggle?.addEventListener('click', () => this.toggleTheme());
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
 
         // Toast close
-        this.elements.toastClose?.addEventListener('click', () => this.hideToast());
-
-        // Error boundary retry
-        this.elements.retryBtn?.addEventListener('click', () => this.retryInitialization());
+        if (this.elements.toastClose) {
+            this.elements.toastClose.addEventListener('click', () => this.hideToast());
+        }
 
         // Keyboard navigation
         document.addEventListener('keydown', (e) => this.handleKeyboard(e));
@@ -461,719 +261,434 @@ class ModernSchoolGallery {
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
             backdrop.addEventListener('click', (e) => {
                 if (e.target === backdrop) {
-                    this.hideAllModals();
+                    this.hideLoginModal();
                 }
             });
         });
 
-        // Online/offline detection
-        window.addEventListener('online', () => {
-            this.showNotification('Connection Restored', 'Internet connection is back online.', 'success');
-            this.retryFailedOperations();
+        // Window events
+        window.addEventListener('hashchange', () => {
+            const section = window.location.hash.slice(1) || 'home';
+            this.navigateToSection(section);
         });
 
-        window.addEventListener('offline', () => {
-            this.showNotification('Connection Lost', 'You are now offline. Some features may be limited.', 'warning');
+        window.addEventListener('resize', () => this.handleResize());
+    }
+
+    setupFileDropZone() {
+        if (!this.elements.fileDropZone || !this.elements.fileInput) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            this.elements.fileDropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
         });
-    }
 
-    // ===============================================================
-    // API Communication with Retry Logic
-    // ===============================================================
-
-    async makeAPICall(endpoint, options = {}) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
-        try {
-            const response = await fetch(`${this.API_URL}?action=${endpoint}`, {
-                method: 'GET',
-                ...options,
-                signal: controller.signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers
-                }
+        ['dragenter', 'dragover'].forEach(eventName => {
+            this.elements.fileDropZone.addEventListener(eventName, () => {
+                this.elements.fileDropZone.classList.add('drag-over');
             });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            return data;
-            
-        } catch (error) {
-            clearTimeout(timeoutId);
-            
-            if (error.name === 'AbortError') {
-                throw new Error('Request timeout - please check your connection');
-            }
-            
-            throw error;
-        }
-    }
+        });
 
-    async makeAPICallWithRetry(endpoint, options = {}, maxRetries = 3) {
-        let lastError;
-        
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-                if (attempt > 0) {
-                    // Exponential backoff
-                    const delay = Math.pow(2, attempt - 1) * 1000;
-                    console.log(`Retrying API call (${attempt}/${maxRetries}) after ${delay}ms...`);
-                    await this.delay(delay);
-                }
-                
-                const result = await this.makeAPICall(endpoint, options);
-                
-                // Reset retry count on success
-                if (endpoint === 'getFolders') {
-                    this.initializationAttempts = 0;
-                }
-                
-                return result;
-                
-            } catch (error) {
-                lastError = error;
-                console.error(`API call attempt ${attempt + 1} failed:`, error);
-                
-                // Don't retry on certain errors
-                if (error.message.includes('403') || error.message.includes('401')) {
-                    throw error;
-                }
-            }
-        }
-        
-        throw lastError;
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // ===============================================================
-    // Cache Management
-    // ===============================================================
-
-    async fetchFolderTreeWithCache() {
-        try {
-            // Try to get from cache first
-            const cachedTree = this.cache.getFolderTree();
-            if (cachedTree) {
-                console.log('Using cached folder tree');
-                this.folderTree = cachedTree;
-                this.populateOccasionSelect();
-                this.populateUploadFolders();
-                return;
-            }
-            
-            // Fetch from API with retry
-            console.log('Fetching folder tree from API...');
-            const data = await this.makeAPICallWithRetry('getFolders');
-            
-            this.folderTree = data.folders || {};
-            
-            // Cache the result
-            this.cache.setFolderTree(this.folderTree);
-            
-            this.populateOccasionSelect();
-            this.populateUploadFolders();
-            
-        } catch (error) {
-            console.error('Failed to fetch folder tree:', error);
-            
-            // Try to use stale cache data
-            const staleData = this.cache.get('folder_tree');
-            if (staleData) {
-                console.log('Using stale cache data');
-                this.folderTree = staleData.data;
-                this.populateOccasionSelect();
-                this.populateUploadFolders();
-                
-                this.showNotification(
-                    'Using Cached Data',
-                    'Displaying previously loaded data. Some information may be outdated.',
-                    'warning'
-                );
-            } else {
-                throw new Error('Unable to load folder structure: ' + error.message);
-            }
-        }
-    }
-
-    async updateStatsWithProgress() {
-        try {
-            // Check cache first
-            const cachedStats = this.cache.getStats();
-            if (cachedStats) {
-                console.log('Using cached stats');
-                this.displayStats(cachedStats);
-                return;
-            }
-            
-            // Show loading bars
-            this.showStatsLoading();
-            
-            // Fetch from API
-            console.log('Fetching stats from API...');
-            const data = await this.makeAPICallWithRetry('getStats');
-            
-            const stats = {
-                totalPhotos: data.totalPhotos || 0,
-                totalVideos: data.totalVideos || 0,
-                totalSize: data.totalSize || '0 MB'
-            };
-            
-            // Cache the result
-            this.cache.setStats(stats);
-            
-            // Display with animation
-            this.displayStats(stats);
-            
-        } catch (error) {
-            console.error('Failed to fetch stats:', error);
-            this.displayStatsError();
-        }
-    }
-
-    showStatsLoading() {
-        const loadingBars = [
-            LoadingBar.create(this.elements.totalPhotos),
-            LoadingBar.create(this.elements.totalVideos),
-            LoadingBar.create(this.elements.totalSize)
-        ];
-        
-        this.statsLoadingBars = loadingBars;
-    }
-
-    displayStats(stats) {
-        // Animate stats display
-        setTimeout(() => {
-            if (this.elements.totalPhotos) {
-                this.elements.totalPhotos.innerHTML = this.animateNumber(0, stats.totalPhotos, 1000);
-            }
-        }, 200);
-        
-        setTimeout(() => {
-            if (this.elements.totalVideos) {
-                this.elements.totalVideos.innerHTML = this.animateNumber(0, stats.totalVideos, 1000);
-            }
-        }, 400);
-        
-        setTimeout(() => {
-            if (this.elements.totalSize) {
-                this.elements.totalSize.innerHTML = stats.totalSize;
-            }
-        }, 600);
-    }
-
-    displayStatsError() {
-        if (this.statsLoadingBars) {
-            this.statsLoadingBars.forEach(bar => {
-                if (bar) bar.error('Error');
+        ['dragleave', 'drop'].forEach(eventName => {
+            this.elements.fileDropZone.addEventListener(eventName, () => {
+                this.elements.fileDropZone.classList.remove('drag-over');
             });
-        }
-    }
+        });
 
-    animateNumber(start, end, duration) {
-        const startTime = Date.now();
-        const element = document.createElement('span');
-        element.textContent = start.toString();
-        
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const current = Math.round(start + (end - start) * progress);
-            
-            element.textContent = current.toString();
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            }
-        };
-        
-        animate();
-        return element.outerHTML;
-    }
+        this.elements.fileDropZone.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files);
+            this.handleFileSelection(files);
+        });
 
-    async refreshCache() {
-        try {
-            // Show loading state
-            if (this.elements.refreshCacheBtn) {
-                this.elements.refreshCacheBtn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i><span>Refreshing...</span>';
-                this.elements.refreshCacheBtn.disabled = true;
-            }
-            
-            // Clear all cache
-            this.cache.invalidateAll();
-            
-            // Show progress
-            const progressBar = new ProgressBar('gallery-progress', {
-                showText: true,
-                animated: true,
-                color: 'primary'
-            });
-            
-            progressBar.show('Refreshing data...');
-            
-            // Refresh folder tree
-            progressBar.setProgress(25, 'Refreshing folder structure...');
-            await this.fetchFolderTreeWithCache();
-            
-            // Refresh stats
-            progressBar.setProgress(75, 'Refreshing statistics...');
-            await this.updateStatsWithProgress();
-            
-            // Complete
-            progressBar.setProgress(100, 'Refresh complete!');
-            
-            setTimeout(() => {
-                progressBar.hide();
-            }, 1000);
-            
-            this.showNotification('Cache Refreshed', 'All data has been updated successfully.', 'success');
-            
-        } catch (error) {
-            console.error('Failed to refresh cache:', error);
-            this.showNotification('Refresh Failed', 'Unable to refresh data. Please try again.', 'error');
-        } finally {
-            // Reset refresh button
-            if (this.elements.refreshCacheBtn) {
-                this.elements.refreshCacheBtn.innerHTML = '<i data-lucide="refresh-cw"></i><span>Refresh</span>';
-                this.elements.refreshCacheBtn.disabled = false;
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
-        }
-    }
+        this.elements.fileDropZone.addEventListener('click', () => {
+            this.elements.fileInput.click();
+        });
 
-    // ===============================================================
-    // Gallery Management
-    // ===============================================================
-
-    populateOccasionSelect() {
-        if (!this.elements.occasionSelect || !this.folderTree) return;
-        
-        // Clear existing options except the first one
-        this.elements.occasionSelect.innerHTML = '<option value="">Select Occasion</option>';
-        
-        // Add occasions
-        Object.keys(this.folderTree).forEach(occasion => {
-            const option = document.createElement('option');
-            option.value = occasion;
-            option.textContent = this.formatOccasionName(occasion);
-            this.elements.occasionSelect.appendChild(option);
+        this.elements.fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            this.handleFileSelection(files);
         });
     }
 
-    formatOccasionName(occasion) {
-        return occasion.replace(/[-_]/g, ' ')
-                     .replace(/\b\w/g, l => l.toUpperCase());
-    }
+    handleFileSelection(files) {
+        if (files.length === 0) return;
 
-    populateYearSelect() {
-        const occasionSelect = this.elements.occasionSelect;
-        const yearSelect = this.elements.yearSelect;
-        
-        if (!occasionSelect || !yearSelect) return;
-        
-        const selectedOccasion = occasionSelect.value;
-        
-        // Reset year select
-        yearSelect.innerHTML = '<option value="">Any Year</option>';
-        yearSelect.disabled = !selectedOccasion;
-        
-        if (selectedOccasion && this.folderTree[selectedOccasion]) {
-            const years = Object.keys(this.folderTree[selectedOccasion]).sort().reverse();
-            years.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                yearSelect.appendChild(option);
-            });
+        // Validate files
+        const validFiles = files.filter(file => {
+            const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+            const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
             
-            yearSelect.disabled = false;
-        }
-        
-        // Reset dependent selects
-        this.populateSubfolderSelect();
-    }
-
-    populateSubfolderSelect() {
-        const occasionSelect = this.elements.occasionSelect;
-        const yearSelect = this.elements.yearSelect;
-        const subfolderSelect = this.elements.subfolderSelect;
-        
-        if (!occasionSelect || !yearSelect || !subfolderSelect) return;
-        
-        const selectedOccasion = occasionSelect.value;
-        const selectedYear = yearSelect.value;
-        
-        // Reset subfolder select
-        subfolderSelect.innerHTML = '<option value="">Any Album</option>';
-        subfolderSelect.disabled = !selectedOccasion || !selectedYear;
-        
-        if (selectedOccasion && selectedYear && 
-            this.folderTree[selectedOccasion] && 
-            this.folderTree[selectedOccasion][selectedYear]) {
-            
-            const subfolders = this.folderTree[selectedOccasion][selectedYear];
-            subfolders.forEach(subfolder => {
-                const option = document.createElement('option');
-                option.value = subfolder;
-                option.textContent = this.formatOccasionName(subfolder);
-                subfolderSelect.appendChild(option);
-            });
-            
-            subfolderSelect.disabled = false;
-        }
-        
-        this.updateViewButton();
-    }
-
-    updateViewButton() {
-        const viewBtn = this.elements.viewAlbumBtn;
-        if (!viewBtn) return;
-        
-        const occasion = this.elements.occasionSelect?.value;
-        const year = this.elements.yearSelect?.value;
-        
-        viewBtn.disabled = !occasion || !year;
-        
-        if (occasion && year) {
-            const subfolder = this.elements.subfolderSelect?.value;
-            const path = subfolder ? `${occasion}/${year}/${subfolder}` : `${occasion}/${year}`;
-            viewBtn.onclick = () => this.loadGallery(path);
-        }
-    }
-
-    async loadGallery(customPath = null) {
-        try {
-            let path = customPath;
-            
-            if (!path) {
-                const occasion = this.elements.occasionSelect?.value;
-                const year = this.elements.yearSelect?.value;
-                const subfolder = this.elements.subfolderSelect?.value;
-                
-                if (!occasion || !year) {
-                    this.showNotification('Selection Required', 'Please select an occasion and year.', 'warning');
-                    return;
-                }
-                
-                path = subfolder ? `${occasion}/${year}/${subfolder}` : `${occasion}/${year}`;
+            if (!isValidType) {
+                this.showNotification('Invalid File', `${file.name} is not a supported file type.`, 'error');
+                return false;
             }
             
-            // Show loading progress
-            const progressBar = new ProgressBar('gallery-progress', {
-                showText: true,
-                animated: true,
-                color: 'primary'
-            });
-            
-            progressBar.show('Loading gallery...');
-            
-            // Check cache first
-            const cachedData = this.cache.getGalleryData(path);
-            if (cachedData) {
-                console.log('Using cached gallery data for:', path);
-                progressBar.setProgress(50, 'Loading from cache...');
-                this.displayGallery(cachedData.files);
-                progressBar.success('Gallery loaded!');
-                
-                setTimeout(() => progressBar.hide(), 1500);
-                return;
+            if (!isValidSize) {
+                this.showNotification('File Too Large', `${file.name} exceeds the 10MB limit.`, 'error');
+                return false;
             }
             
-            progressBar.setProgress(25, 'Fetching images...');
-            
-            // Fetch from API
-            const data = await this.makeAPICallWithRetry('getFiles', {
-                method: 'POST',
-                body: JSON.stringify({ path })
-            });
-            
-            progressBar.setProgress(75, 'Processing images...');
-            
-            const files = data.files || [];
-            
-            // Cache the result
-            this.cache.setGalleryData(path, { files, path });
-            
-            progressBar.setProgress(90, 'Rendering gallery...');
-            
-            // Display gallery
-            this.displayGallery(files);
-            
-            progressBar.success('Gallery loaded successfully!');
-            
-            setTimeout(() => progressBar.hide(), 1500);
-            
-        } catch (error) {
-            console.error('Failed to load gallery:', error);
-            
-            const progressBar = this.progressBars.get('gallery-progress');
-            if (progressBar) {
-                progressBar.error('Failed to load gallery');
-                setTimeout(() => progressBar.hide(), 3000);
-            }
-            
-            this.showNotification('Loading Failed', 'Unable to load gallery. Please try again.', 'error');
-            this.showEmptyState();
-        }
-    }
-
-    displayGallery(files) {
-        const galleryGrid = this.elements.galleryGrid;
-        const emptyMessage = this.elements.emptyMessage;
-        
-        if (!galleryGrid) return;
-        
-        if (!files || files.length === 0) {
-            this.showEmptyState();
-            return;
-        }
-        
-        // Hide empty state
-        if (emptyMessage) {
-            emptyMessage.classList.add('hidden');
-        }
-        
-        // Store files for lightbox and filtering
-        this.galleryFiles = files;
-        this.filteredFiles = files;
-        
-        // Render gallery items
-        galleryGrid.innerHTML = '';
-        files.forEach((file, index) => {
-            const item = this.createGalleryItem(file, index);
-            galleryGrid.appendChild(item);
+            return true;
         });
+
+        if (validFiles.length > 0) {
+            this.updateFilePreview(validFiles);
+        }
+    }
+
+    updateFilePreview(files) {
+        if (!this.elements.filePreviewContainer || !this.elements.filePreviewList) return;
+
+        this.elements.filePreviewContainer.classList.remove('hidden');
         
-        // Initialize icons
+        const previewHTML = files.map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const fileSize = this.formatFileSize(file.size);
+            
+            return `
+                <div class="file-preview-item" data-index="${index}">
+                    ${isImage ? `
+                        <img class="file-preview-thumb" src="${URL.createObjectURL(file)}" alt="${file.name}">
+                    ` : `
+                        <div class="file-preview-thumb placeholder">
+                            <i data-lucide="video"></i>
+                        </div>
+                    `}
+                    <div class="file-preview-info">
+                        <div class="file-preview-name">${file.name}</div>
+                        <div class="file-preview-size">${fileSize}</div>
+                    </div>
+                    <button class="action-btn" onclick="gallery.removeFileFromPreview(${index})" aria-label="Remove file">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        this.elements.filePreviewList.innerHTML = previewHTML;
+        
+        // Update drop zone
+        const content = this.elements.fileDropZone.querySelector('.drop-zone-content');
+        if (content) {
+            content.innerHTML = `
+                <i data-lucide="file-check"></i>
+                <p>${files.length} file${files.length > 1 ? 's' : ''} selected</p>
+                <span>Ready to upload</span>
+            `;
+        }
+
+        // Store files for upload
+        this.selectedFiles = files;
+        
+        // Reinitialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
     }
 
-    createGalleryItem(file, index) {
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.onclick = () => this.openLightbox(index);
+    removeFileFromPreview(index) {
+        if (!this.selectedFiles) return;
         
-        const isVideo = this.isVideoFile(file.name);
-        const fileType = isVideo ? 'video' : 'photo';
+        this.selectedFiles.splice(index, 1);
         
-        item.innerHTML = `
-            <div class="gallery-item-type">${fileType}</div>
-            <img src="${file.thumbnailUrl || file.url}" 
-                 alt="${file.name}" 
-                 class="gallery-item-image"
-                 loading="lazy">
-            <div class="gallery-item-info">
-                <div class="gallery-item-title">${this.truncateFilename(file.name)}</div>
-                <div class="gallery-item-details">
-                    <span>${this.formatFileSize(file.size || 0)}</span>
-                    <span>${this.formatDate(file.dateCreated)}</span>
-                </div>
-            </div>
-        `;
-        
-        return item;
-    }
-
-    isVideoFile(filename) {
-        const videoExtensions = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'];
-        const extension = filename.split('.').pop()?.toLowerCase();
-        return videoExtensions.includes(extension);
-    }
-
-    truncateFilename(filename, maxLength = 30) {
-        if (filename.length <= maxLength) return filename;
-        
-        const extension = filename.split('.').pop();
-        const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
-        const truncatedName = nameWithoutExt.substring(0, maxLength - extension.length - 4);
-        
-        return `${truncatedName}...${extension}`;
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-
-    formatDate(dateString) {
-        if (!dateString) return 'Unknown';
-        
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    }
-
-    showEmptyState() {
-        const galleryGrid = this.elements.galleryGrid;
-        const emptyMessage = this.elements.emptyMessage;
-        
-        if (galleryGrid) {
-            galleryGrid.innerHTML = '';
-        }
-        
-        if (emptyMessage) {
-            emptyMessage.classList.remove('hidden');
-        }
-    }
-
-    filterGallery(searchTerm) {
-        if (!this.galleryFiles) return;
-        
-        const term = searchTerm.toLowerCase().trim();
-        
-        if (!term) {
-            this.filteredFiles = this.galleryFiles;
+        if (this.selectedFiles.length === 0) {
+            this.clearFileSelection();
         } else {
-            this.filteredFiles = this.galleryFiles.filter(file => 
-                file.name.toLowerCase().includes(term) ||
-                (file.tags && file.tags.some(tag => tag.toLowerCase().includes(term)))
-            );
+            this.updateFilePreview(this.selectedFiles);
         }
-        
-        this.displayGallery(this.filteredFiles);
     }
 
-    setView(view) {
-        this.currentView = view;
+    clearFileSelection() {
+        this.selectedFiles = [];
         
-        // Update toggle states
-        this.elements.viewToggles?.forEach(toggle => {
-            toggle.classList.toggle('active', toggle.dataset.view === view);
-        });
+        if (this.elements.filePreviewContainer) {
+            this.elements.filePreviewContainer.classList.add('hidden');
+        }
         
-        // Update gallery grid class
-        const galleryGrid = this.elements.galleryGrid;
-        if (galleryGrid) {
-            galleryGrid.className = `gallery-grid ${view}-view`;
+        if (this.elements.fileInput) {
+            this.elements.fileInput.value = '';
+        }
+        
+        // Reset drop zone
+        const content = this.elements.fileDropZone?.querySelector('.drop-zone-content');
+        if (content) {
+            content.innerHTML = `
+                <i data-lucide="upload-cloud"></i>
+                <p>Drop files here or click to browse</p>
+                <span>Supports images and videos (Max 10MB each)</span>
+            `;
+        }
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    // ===============================================================
+    // API Communication
+    // ===============================================================
+    
+    async apiCall(action, body = {}, method = 'GET') {
+        try {
+            let response;
+            
+            if (method === 'GET') {
+                const params = new URLSearchParams(body);
+                const url = `${this.API_URL}?action=${action}&${params.toString()}`;
+                response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+            } else {
+                body.action = action;
+                if (this.sessionToken) {
+                    body.token = this.sessionToken;
+                }
+                
+                response = await fetch(this.API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: JSON.stringify(body),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                });
+            }
+            
+            if (!response.ok) {
+                throw new Error(`Network error: ${response.status} ${response.statusText}`);
+            }
+            
+            const textResponse = await response.text();
+            let jsonResponse;
+            
+            try {
+                jsonResponse = JSON.parse(textResponse);
+            } catch (parseError) {
+                console.error('Failed to parse response:', textResponse);
+                throw new Error('Invalid response format from server');
+            }
+            
+            if (jsonResponse.error) {
+                throw new Error(jsonResponse.message || 'Unknown server error');
+            }
+            
+            return jsonResponse;
+            
+        } catch (error) {
+            console.error('API Error:', error);
+            this.showNotification('Error', error.message || 'An unexpected error occurred', 'error');
+            return null;
         }
     }
 
     // ===============================================================
     // Navigation & UI Management
     // ===============================================================
-
-    navigateToSection(sectionId) {
+    
+    navigateToSection(sectionName) {
         // Update URL
-        window.history.pushState({}, '', `#${sectionId}`);
+        if (window.location.hash.slice(1) !== sectionName) {
+            window.location.hash = sectionName;
+        }
         
         // Hide all sections
-        this.elements.sections?.forEach(section => {
+        this.elements.sections.forEach(section => {
             section.classList.remove('active');
         });
         
         // Show target section
-        const targetSection = document.getElementById(sectionId);
+        const targetSection = document.getElementById(sectionName);
         if (targetSection) {
             targetSection.classList.add('active');
         }
         
         // Update navigation
-        this.elements.navLinks?.forEach(link => {
-            link.classList.toggle('active', link.dataset.section === sectionId);
+        this.elements.navLinks.forEach(link => {
+            link.classList.remove('active');
         });
         
-        // Handle section-specific logic
-        if (sectionId === 'gallery' && !this.galleryFiles.length) {
-            // Auto-load some default data if available
-            if (this.folderTree && Object.keys(this.folderTree).length > 0) {
-                const firstOccasion = Object.keys(this.folderTree)[0];
-                const firstYear = Object.keys(this.folderTree[firstOccasion])[0];
-                
-                if (this.elements.occasionSelect) {
-                    this.elements.occasionSelect.value = firstOccasion;
-                    this.populateYearSelect();
-                    
-                    if (this.elements.yearSelect) {
-                        this.elements.yearSelect.value = firstYear;
-                        this.populateSubfolderSelect();
-                        this.updateViewButton();
+        const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+        
+        // Load section-specific data
+        if (sectionName === 'upload') {
+            this.loadUploadFolders();
+        }
+    }
+
+    showNotification(title, message, type = 'success') {
+        if (!this.elements.toast) return;
+
+        const icons = {
+            success: '<i data-lucide="check-circle"></i>',
+            error: '<i data-lucide="x-circle"></i>',
+            warning: '<i data-lucide="alert-triangle"></i>',
+            info: '<i data-lucide="info"></i>'
+        };
+        
+        // Set content
+        this.elements.toastTitle.textContent = title;
+        this.elements.toastMessage.textContent = message;
+        this.elements.toastIcon.innerHTML = icons[type] || icons.success;
+        
+        // Set class
+        this.elements.toast.className = `toast toast-${type}`;
+        this.elements.toast.classList.remove('hidden');
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => this.hideToast(), 5000);
+    }
+
+    hideToast() {
+        if (this.elements.toast) {
+            this.elements.toast.classList.add('hidden');
+        }
+    }
+
+    setView(viewType) {
+        this.currentView = viewType;
+        
+        // Update toggle buttons
+        this.elements.viewToggles.forEach(toggle => {
+            toggle.classList.toggle('active', toggle.dataset.view === viewType);
+        });
+        
+        // Update grid class
+        if (this.elements.galleryGrid) {
+            this.elements.galleryGrid.className = viewType === 'list' ? 'gallery-list' : 'gallery-grid';
+        }
+        
+        // Re-render current gallery
+        this.renderGallery(this.filteredFiles);
+    }
+
+    handleResize() {
+        // Handle responsive behavior
+        if (window.innerWidth < 768) {
+            // Mobile adjustments
+            this.setView('grid');
+        }
+    }
+
+    handleKeyboard(e) {
+        // Global keyboard shortcuts
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case 'k':
+                    e.preventDefault();
+                    if (this.elements.searchInput) {
+                        this.elements.searchInput.focus();
                     }
-                }
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    if (this.isAuthenticated) {
+                        this.navigateToSection('upload');
+                    }
+                    break;
             }
         }
+        
+        // Lightbox navigation
+        if (!this.elements.lightboxModal.classList.contains('hidden')) {
+            switch (e.key) {
+                case 'Escape':
+                    this.hideLightbox();
+                    break;
+                case 'ArrowLeft':
+                    this.navigateLightbox(-1);
+                    break;
+                case 'ArrowRight':
+                    this.navigateLightbox(1);
+                    break;
+            }
+        }
+        
+        // Modal handling
+        if (e.key === 'Escape') {
+            this.hideLoginModal();
+        }
+    }
+
+    updateAdminUI(isLoggedIn) {
+        this.isAuthenticated = isLoggedIn;
+        
+        this.elements.adminOnly.forEach(el => {
+            el.classList.toggle('hidden', !isLoggedIn);
+        });
+        
+        this.elements.loginOnly.forEach(el => {
+            el.classList.toggle('hidden', isLoggedIn);
+        });
+        
+        // Update delete buttons in gallery cards
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.classList.toggle('hidden', !isLoggedIn);
+        });
+    }
+
+    // ===============================================================
+    // Theme Management
+    // ===============================================================
+    
+    handleTheme() {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', theme);
+        
+        if (this.elements.moonIcon && this.elements.sunIcon) {
+            if (theme === 'dark') {
+                this.elements.moonIcon.classList.add('hidden');
+                this.elements.sunIcon.classList.remove('hidden');
+            } else {
+                this.elements.moonIcon.classList.remove('hidden');
+                this.elements.sunIcon.classList.add('hidden');
+            }
+        }
+    }
+
+    toggleTheme() {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', newTheme);
+        this.handleTheme();
+        
+        this.showNotification('Theme Changed', `Switched to ${newTheme} theme`, 'success');
     }
 
     // ===============================================================
     // Authentication
     // ===============================================================
-
-    async checkSession() {
-        if (!this.sessionToken) return false;
-        
-        try {
-            const response = await this.makeAPICall('checkSession', {
-                method: 'POST',
-                body: JSON.stringify({ token: this.sessionToken })
-            });
-            
-            if (response.valid) {
-                this.isAuthenticated = true;
-                this.showAdminUI();
-                return true;
-            } else {
-                this.sessionToken = null;
-                sessionStorage.removeItem('adminToken');
-                return false;
-            }
-        } catch (error) {
-            console.error('Session check failed:', error);
-            return false;
-        }
-    }
-
+    
     showLoginModal() {
-        const modal = this.elements.loginModal;
-        if (modal) {
-            modal.classList.remove('hidden');
-            
-            // Focus on username input
-            setTimeout(() => {
-                this.elements.usernameInput?.focus();
-            }, 100);
+        if (this.elements.loginModal) {
+            this.elements.loginModal.classList.remove('hidden');
+            if (this.elements.usernameInput) {
+                this.elements.usernameInput.focus();
+            }
         }
     }
 
     hideLoginModal() {
-        const modal = this.elements.loginModal;
-        if (modal) {
-            modal.classList.add('hidden');
+        if (this.elements.loginModal) {
+            this.elements.loginModal.classList.add('hidden');
+        }
+        if (this.elements.loginError) {
+            this.elements.loginError.classList.add('hidden');
         }
         
         // Clear form
         if (this.elements.loginForm) {
             this.elements.loginForm.reset();
-        }
-        
-        // Clear error
-        if (this.elements.loginError) {
-            this.elements.loginError.classList.add('hidden');
         }
     }
 
@@ -1188,949 +703,952 @@ class ModernSchoolGallery {
             return;
         }
         
-        try {
-            // Show loading state
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn?.innerHTML;
-            
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i><span>Logging in...</span>';
-                submitBtn.disabled = true;
-            }
-            
-            const response = await this.makeAPICall('login', {
-                method: 'POST',
-                body: JSON.stringify({ username, password })
-            });
-            
-            if (response.success && response.token) {
-                this.sessionToken = response.token;
-                sessionStorage.setItem('adminToken', response.token);
-                this.isAuthenticated = true;
-                
-                this.hideLoginModal();
-                this.showAdminUI();
-                this.showNotification('Login Successful', 'Welcome to the admin panel!', 'success');
-            } else {
-                this.showLoginError(response.message || 'Invalid credentials');
-            }
-        } catch (error) {
-            console.error('Login failed:', error);
-            this.showLoginError('Login failed. Please check your connection and try again.');
-        } finally {
-            // Reset submit button
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.innerHTML = originalText || '<i data-lucide="log-in"></i><span>Login</span>';
-                submitBtn.disabled = false;
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
+        const result = await this.apiCall('login', { username, password }, 'POST');
+        
+        if (result?.success) {
+            this.sessionToken = result.token;
+            sessionStorage.setItem('adminToken', result.token);
+            this.updateAdminUI(true);
+            this.hideLoginModal();
+            this.showNotification('Success', 'Logged in successfully!', 'success');
+        } else {
+            this.showLoginError(result?.message || 'Login failed. Please check your credentials.');
         }
     }
 
     showLoginError(message) {
-        const errorElement = this.elements.loginError;
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.classList.remove('hidden');
+        if (this.elements.loginError) {
+            this.elements.loginError.textContent = message;
+            this.elements.loginError.classList.remove('hidden');
         }
     }
 
-    handleLogout() {
+    async handleLogout() {
+        await this.apiCall('logout', { token: this.sessionToken }, 'POST');
+        
         this.sessionToken = null;
         sessionStorage.removeItem('adminToken');
-        this.isAuthenticated = false;
+        this.updateAdminUI(false);
+        this.showNotification('Success', 'Logged out successfully!', 'success');
         
-        this.hideAdminUI();
-        this.showNotification('Logged Out', 'You have been logged out successfully.', 'info');
-        
-        // Redirect to home
+        // Navigate to home
         this.navigateToSection('home');
     }
 
-    showAdminUI() {
-        this.elements.adminOnly?.forEach(element => {
-            element.classList.remove('hidden');
-        });
+    async checkSession() {
+        if (!this.sessionToken) return;
         
-        this.elements.loginOnly?.forEach(element => {
-            element.classList.add('hidden');
-        });
-    }
-
-    hideAdminUI() {
-        this.elements.adminOnly?.forEach(element => {
-            element.classList.add('hidden');
-        });
+        const result = await this.apiCall('checkSession', { token: this.sessionToken }, 'POST');
         
-        this.elements.loginOnly?.forEach(element => {
-            element.classList.remove('hidden');
-        });
+        if (result?.success) {
+            this.updateAdminUI(true);
+        } else {
+            this.sessionToken = null;
+            sessionStorage.removeItem('adminToken');
+            this.updateAdminUI(false);
+        }
     }
 
     // ===============================================================
-    // File Upload with Progress
+    // Data Loading
     // ===============================================================
-
-    setupFileDropZone() {
-        const dropZone = this.elements.fileDropZone;
-        const fileInput = this.elements.fileInput;
+    
+    async fetchFolderTree() {
+        const result = await this.apiCall('getFolderTree');
         
-        if (!dropZone || !fileInput) return;
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, this.preventDefaults, false);
-            document.body.addEventListener(eventName, this.preventDefaults, false);
-        });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.classList.add('drag-over');
-            }, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => {
-                dropZone.classList.remove('drag-over');
-            }, false);
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            const files = e.dataTransfer.files;
-            this.handleFileSelection(files);
-        }, false);
-        
-        fileInput.addEventListener('change', (e) => {
-            this.handleFileSelection(e.target.files);
-        });
-        
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
+        if (result) {
+            this.folderTree = result;
+            this.populateOccasionSelect();
+            this.populateUploadFolders();
+        }
     }
 
-    preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
+    async updateStats() {
+        const result = await this.apiCall('getStats');
+        
+        if (result && this.elements.totalPhotos) {
+            this.animateStatUpdate(this.elements.totalPhotos, result.totalImages || 0);
+            this.animateStatUpdate(this.elements.totalVideos, result.totalVideos || 0);
+            this.elements.totalSize.textContent = result.totalSize || '0 MB';
+        }
     }
 
-    handleFileSelection(files) {
-        if (!files || files.length === 0) return;
+    animateStatUpdate(element, targetValue) {
+        const startValue = parseInt(element.textContent) || 0;
+        const duration = 1000;
+        const startTime = performance.now();
         
-        this.uploadQueue = Array.from(files).filter(file => {
-            const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
-            const isValidSize = file.size <= 50 * 1024 * 1024; // 50MB limit
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
             
-            if (!isValidType) {
-                this.showNotification('Invalid File', `${file.name} is not a valid image or video file.`, 'error');
-                return false;
+            const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+            element.textContent = currentValue.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+        
+        requestAnimationFrame(animate);
+    }
+
+    populateOccasionSelect() {
+        if (!this.folderTree || !this.elements.occasionSelect) return;
+
+        this.elements.occasionSelect.innerHTML = '<option value="">Select Occasion</option>';
+        
+        this.folderTree.children.forEach(occasion => {
+            const option = document.createElement('option');
+            option.value = occasion.id;
+            option.textContent = `${occasion.name} (${occasion.fileCount || 0} files)`;
+            this.elements.occasionSelect.appendChild(option);
+        });
+    }
+
+    populateYearSelect() {
+        if (!this.elements.yearSelect) return;
+
+        const selectedOccasionId = this.elements.occasionSelect?.value;
+        this.elements.yearSelect.innerHTML = '<option value="">Any Year</option>';
+        this.elements.yearSelect.disabled = !selectedOccasionId;
+        
+        if (selectedOccasionId) {
+            const occasion = this.folderTree.children.find(o => o.id === selectedOccasionId);
+            if (occasion) {
+                occasion.children.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year.id;
+                    option.textContent = `${year.name} (${year.fileCount || 0} files)`;
+                    this.elements.yearSelect.appendChild(option);
+                });
+            }
+        }
+        
+        this.populateSubfolderSelect();
+    }
+
+    populateSubfolderSelect() {
+        if (!this.elements.subfolderSelect) return;
+
+        const selectedYearId = this.elements.yearSelect?.value;
+        this.elements.subfolderSelect.innerHTML = '<option value="">Any Album</option>';
+        this.elements.subfolderSelect.disabled = !selectedYearId;
+        
+        if (selectedYearId) {
+            const year = this.findFolderById(selectedYearId);
+            if (year && year.children) {
+                year.children.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.id;
+                    option.textContent = `${subfolder.name} (${subfolder.fileCount || 0} files)`;
+                    this.elements.subfolderSelect.appendChild(option);
+                });
+            }
+        }
+        
+        this.updateViewButton();
+    }
+
+    updateViewButton() {
+        if (!this.elements.viewAlbumBtn) return;
+
+        const hasSelection = this.elements.occasionSelect?.value || 
+                           this.elements.yearSelect?.value || 
+                           this.elements.subfolderSelect?.value;
+        
+        this.elements.viewAlbumBtn.disabled = !hasSelection;
+    }
+
+    findFolderById(id) {
+        if (!this.folderTree) return null;
+        
+        const searchInFolder = (folder) => {
+            if (folder.id === id) return folder;
+            
+            if (folder.children) {
+                for (const child of folder.children) {
+                    const found = searchInFolder(child);
+                    if (found) return found;
+                }
             }
             
-            if (!isValidSize) {
-                this.showNotification('File Too Large', `${file.name} exceeds the 50MB size limit.`, 'error');
-                return false;
-            }
-            
-            return true;
-        });
+            return null;
+        };
         
-        this.displayFilePreview();
+        return searchInFolder(this.folderTree);
     }
 
-    displayFilePreview() {
-        const container = this.elements.filePreviewContainer;
-        const list = this.elements.filePreviewList;
+    async loadGallery() {
+        const folderId = this.elements.subfolderSelect?.value || 
+                        this.elements.yearSelect?.value || 
+                        this.elements.occasionSelect?.value;
         
-        if (!container || !list || this.uploadQueue.length === 0) return;
+        if (!folderId) {
+            this.showNotification('Error', 'Please select a folder to view', 'error');
+            return;
+        }
         
-        container.classList.remove('hidden');
-        list.innerHTML = '';
+        this.showSpinner(true);
+        this.elements.emptyMessage?.classList.add('hidden');
         
-        this.uploadQueue.forEach((file, index) => {
-            const item = document.createElement('div');
-            item.className = 'file-preview-item';
+        const action = this.elements.subfolderSelect?.value ? 'getFiles' : 'getFilesRecursive';
+        const result = await this.apiCall(action, { folderId });
+        
+        this.showSpinner(false);
+        
+        if (result) {
+            this.galleryFiles = result;
+            this.filteredFiles = [...result];
+            this.renderGallery(this.filteredFiles);
             
-            const isVideo = file.type.startsWith('video/');
+            // Clear search when loading new gallery
+            if (this.elements.searchInput) {
+                this.elements.searchInput.value = '';
+            }
+        }
+    }
+
+    showSpinner(show) {
+        if (this.elements.loadingSpinner) {
+            this.elements.loadingSpinner.classList.toggle('hidden', !show);
+        }
+    }
+
+    filterGallery(searchTerm) {
+        if (!searchTerm) {
+            this.filteredFiles = [...this.galleryFiles];
+        } else {
+            const term = searchTerm.toLowerCase();
+            this.filteredFiles = this.galleryFiles.filter(file =>
+                file.name.toLowerCase().includes(term)
+            );
+        }
+        
+        this.renderGallery(this.filteredFiles);
+    }
+
+    renderGallery(files) {
+        if (!this.elements.galleryGrid) return;
+
+        if (files.length === 0) {
+            this.elements.galleryGrid.innerHTML = '';
+            this.elements.emptyMessage?.classList.remove('hidden');
+            return;
+        }
+        
+        this.elements.emptyMessage?.classList.add('hidden');
+        
+        const galleryHTML = files.map((file, index) => {
+            const isVideo = file.mimeType.startsWith('video/');
+            const thumbnailUrl = file.thumbnailUrl || file.directImageUrl;
             
-            item.innerHTML = `
-                <div class="file-preview-thumb">
-                    ${isVideo ? '<i data-lucide="video"></i>' : '<i data-lucide="image"></i>'}
+            return `
+                <div class="gallery-card" data-index="${index}" role="button" tabindex="0" aria-label="View ${file.name}">
+                    <div class="gallery-media-container">
+                        ${thumbnailUrl ? `
+                            <img 
+                                src="${thumbnailUrl}" 
+                                alt="${file.name}" 
+                                class="gallery-media"
+                                loading="lazy"
+                                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiByeD0iMiIgcnk9IjIiPjwvcmVjdD48Y2lyY2xlIGN4PSI4LjUiIGN5PSI4LjUiIHI9IjEuNSI+PC9jaXJjbGU+PHBvbHlsaW5lIHBvaW50cz0iMjEsMTUgMTYsMTAgNSwyMSI+PC9wb2x5bGluZT48L3N2Zz4='"
+                            >
+                        ` : `
+                            <div class="gallery-media placeholder">
+                                <i data-lucide="${isVideo ? 'video' : 'image'}"></i>
+                            </div>
+                        `}
+                        
+                        ${isVideo ? `
+                            <div class="video-indicator">
+                                <i data-lucide="play"></i>
+                                <span>Video</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="media-overlay">
+                            <div class="media-actions">
+                                <button class="media-action-btn" onclick="window.open('${file.downloadUrl}', '_blank')" aria-label="Download" title="Download">
+                                    <i data-lucide="download"></i>
+                                </button>
+                                <button class="media-action-btn" onclick="window.open('${file.viewUrl}', '_blank')" aria-label="View in Drive" title="View in Google Drive">
+                                    <i data-lucide="external-link"></i>
+                                </button>
+                                ${this.isAuthenticated ? `
+                                    <button class="media-action-btn" onclick="gallery.showRenameModal('${file.id}', '${file.name.replace(/'/g, '\\\'')}')" aria-label="Rename" title="Rename file">
+                                        <i data-lucide="edit-3"></i>
+                                    </button>
+                                    <button class="media-action-btn delete-action" onclick="gallery.deleteFile('${file.id}')" aria-label="Delete" title="Delete file">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="media-info">
+                                <div class="file-size">${file.formattedSize || 'Unknown size'}</div>
+                                <div class="file-type">${isVideo ? 'Video' : 'Image'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-card-content">
+                        <h3 class="gallery-card-title">${file.name}</h3>
+                        <div class="gallery-card-meta">
+                            <span>${new Date(file.dateCreated).toLocaleDateString()}</span>
+                            <span>${file.formattedSize || ''}</span>
+                        </div>
+                        
+                        <div class="gallery-card-actions">
+                            <button class="action-btn" onclick="window.open('${file.viewUrl}', '_blank')" aria-label="View in Google Drive">
+                                <i data-lucide="external-link"></i>
+                            </button>
+                            <button class="action-btn" onclick="window.open('${file.downloadUrl}', '_blank')" aria-label="Download">
+                                <i data-lucide="download"></i>
+                            </button>
+                            ${this.isAuthenticated ? `
+                                <button class="action-btn delete-btn" onclick="gallery.deleteFile('${file.id}')" aria-label="Delete file">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>
-                <div class="file-preview-info">
-                    <div class="file-preview-name">${file.name}</div>
-                    <div class="file-preview-size">${this.formatFileSize(file.size)}</div>
-                </div>
-                <button type="button" class="file-preview-remove" onclick="gallery.removeFileFromQueue(${index})">
-                    <i data-lucide="x"></i>
-                </button>
             `;
+        }).join('');
+        
+        this.elements.galleryGrid.innerHTML = galleryHTML;
+        
+        // Add click listeners to gallery cards
+        this.elements.galleryGrid.querySelectorAll('.gallery-card').forEach((card, index) => {
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.gallery-card-actions') && !e.target.closest('.media-actions')) {
+                    this.showLightbox(index);
+                }
+            });
             
-            list.appendChild(item);
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (!e.target.closest('.gallery-card-actions') && !e.target.closest('.media-actions')) {
+                        this.showLightbox(index);
+                    }
+                }
+            });
         });
         
+        // Reinitialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
     }
 
-    removeFileFromQueue(index) {
-        this.uploadQueue.splice(index, 1);
+    // ===============================================================
+    // Lightbox
+    // ===============================================================
+    
+    showLightbox(index) {
+        if (!this.filteredFiles || this.filteredFiles.length === 0) return;
         
-        if (this.uploadQueue.length === 0) {
-            this.clearFileSelection();
+        this.currentLightboxIndex = index;
+        this.elements.lightboxModal?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        this.updateLightboxContent();
+    }
+
+    hideLightbox() {
+        this.elements.lightboxModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        
+        // Pause any playing video
+        if (this.elements.lightboxVideo && !this.elements.lightboxVideo.paused) {
+            this.elements.lightboxVideo.pause();
+        }
+        
+        // Reset zoom
+        this.resetZoom();
+    }
+
+    navigateLightbox(direction) {
+        if (!this.filteredFiles || this.filteredFiles.length === 0) return;
+        
+        this.currentLightboxIndex = (this.currentLightboxIndex + direction + this.filteredFiles.length) % this.filteredFiles.length;
+        this.updateLightboxContent();
+    }
+
+    updateLightboxContent() {
+        if (!this.filteredFiles || this.filteredFiles.length === 0) return;
+        
+        const file = this.filteredFiles[this.currentLightboxIndex];
+        if (!file) return;
+        
+        const isVideo = file.mimeType.startsWith('video/');
+        
+        // Update title and details
+        if (this.elements.lightboxTitle) {
+            this.elements.lightboxTitle.textContent = 'Media Viewer';
+        }
+        if (this.elements.lightboxFilename) {
+            this.elements.lightboxFilename.textContent = file.name;
+        }
+        if (this.elements.lightboxDetails) {
+            const details = [
+                new Date(file.dateCreated).toLocaleDateString(),
+                file.formattedSize || 'Unknown size'
+            ];
+            if (file.mediaInfo?.width && file.mediaInfo?.height) {
+                details.push(`${file.mediaInfo.width}×${file.mediaInfo.height}`);
+            }
+            this.elements.lightboxDetails.textContent = details.join(' • ');
+        }
+        if (this.elements.lightboxCounter) {
+            this.elements.lightboxCounter.textContent = `${this.currentLightboxIndex + 1} of ${this.filteredFiles.length}`;
+        }
+        
+        // Update media
+        if (isVideo) {
+            this.elements.lightboxImage?.classList.add('hidden');
+            this.elements.lightboxVideo?.classList.remove('hidden');
+            
+            if (this.elements.lightboxVideo) {
+                this.elements.lightboxVideo.src = file.directImageUrl || file.viewUrl;
+                this.elements.lightboxVideo.poster = file.thumbnailUrl || '';
+            }
         } else {
-            this.displayFilePreview();
+            this.elements.lightboxVideo?.classList.add('hidden');
+            this.elements.lightboxImage?.classList.remove('hidden');
+            
+            if (this.elements.lightboxImage) {
+                this.elements.lightboxImage.src = file.highResThumbnailUrl || file.directImageUrl || file.thumbnailUrl || '';
+                this.elements.lightboxImage.alt = file.name;
+            }
+        }
+        
+        // Update download button
+        if (this.elements.lightboxDownload) {
+            this.elements.lightboxDownload.onclick = () => {
+                window.open(file.downloadUrl, '_blank');
+            };
+        }
+        
+        // Update navigation button states
+        if (this.elements.lightboxPrev) {
+            this.elements.lightboxPrev.disabled = this.filteredFiles.length <= 1;
+        }
+        if (this.elements.lightboxNext) {
+            this.elements.lightboxNext.disabled = this.filteredFiles.length <= 1;
+        }
+        
+        // Reset zoom for new image
+        this.resetZoom();
+    }
+
+    downloadCurrentImage() {
+        if (this.filteredFiles && this.filteredFiles[this.currentLightboxIndex]) {
+            const file = this.filteredFiles[this.currentLightboxIndex];
+            window.open(file.downloadUrl, '_blank');
         }
     }
 
-    clearFileSelection() {
-        this.uploadQueue = [];
-        
-        const container = this.elements.filePreviewContainer;
-        const fileInput = this.elements.fileInput;
-        
-        if (container) {
-            container.classList.add('hidden');
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            this.elements.lightboxModal.requestFullscreen().catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen();
         }
+    }
+
+    zoomImage(factor) {
+        const image = this.elements.lightboxImage;
+        if (!image) return;
         
-        if (fileInput) {
-            fileInput.value = '';
+        const currentTransform = image.style.transform || 'scale(1)';
+        const currentScale = parseFloat(currentTransform.match(/scale\(([^)]+)\)/)?.[1] || 1);
+        const newScale = Math.max(0.5, Math.min(5, currentScale * factor));
+        
+        image.style.transform = `scale(${newScale})`;
+        image.style.transformOrigin = 'center center';
+        image.style.transition = 'transform 0.3s ease';
+    }
+
+    resetZoom() {
+        const image = this.elements.lightboxImage;
+        if (image) {
+            image.style.transform = 'scale(1)';
+            image.style.transition = 'transform 0.3s ease';
         }
+    }
+
+    // ===============================================================
+    // Enhanced File Upload System
+    // ===============================================================
+    
+    async loadUploadFolders() {
+        if (!this.folderTree) return;
+        
+        const populateSelect = (select, folders, prefix = '') => {
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Select Destination</option>';
+            
+            const addFolderOptions = (folder, currentPrefix = '') => {
+                const displayName = currentPrefix + folder.name;
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = displayName;
+                select.appendChild(option);
+                
+                if (folder.children) {
+                    folder.children.forEach(child => {
+                        addFolderOptions(child, currentPrefix + '  ');
+                    });
+                }
+            };
+            
+            folders.forEach(folder => addFolderOptions(folder, prefix));
+        };
+        
+        // Populate upload destination select
+        populateSelect(this.elements.folderSelectUpload, this.folderTree.children);
+        
+        // Populate parent folder select for new folder creation
+        populateSelect(this.elements.parentFolderSelect, [this.folderTree, ...this.folderTree.children]);
     }
 
     async handleUpload(e) {
         e.preventDefault();
         
-        if (!this.isAuthenticated) {
-            this.showNotification('Authentication Required', 'Please login to upload files.', 'error');
+        const folderId = this.elements.folderSelectUpload?.value;
+        const files = this.selectedFiles;
+        
+        if (!folderId) {
+            this.showNotification('Error', 'Please select a destination folder', 'error');
             return;
         }
         
-        if (this.uploadQueue.length === 0) {
-            this.showNotification('No Files Selected', 'Please select files to upload.', 'warning');
+        if (!files || files.length === 0) {
+            this.showNotification('Error', 'Please select files to upload', 'error');
             return;
         }
         
-        const folder = this.elements.folderSelectUpload?.value;
-        if (!folder) {
-            this.showNotification('Folder Required', 'Please select a destination folder.', 'warning');
+        if (this.uploadInProgress) {
+            this.showNotification('Warning', 'Upload already in progress', 'warning');
             return;
         }
+        
+        this.uploadInProgress = true;
+        this.currentUploadController = new AbortController();
+        
+        // Show upload progress panel
+        this.elements.uploadProgressPanel?.classList.remove('hidden');
+        
+        // Initialize progress
+        this.updateOverallProgress(0, 0, files.length);
+        this.initializeFileProgress(files);
+        
+        const results = [];
+        const startTime = Date.now();
+        let uploadedBytes = 0;
+        let totalBytes = files.reduce((sum, file) => sum + file.size, 0);
         
         try {
-            this.uploadInProgress = true;
-            this.showUploadProgress();
-            
-            const totalFiles = this.uploadQueue.length;
-            let completedFiles = 0;
-            
-            for (let i = 0; i < this.uploadQueue.length; i++) {
-                const file = this.uploadQueue[i];
+            for (let i = 0; i < files.length; i++) {
+                if (this.currentUploadController.signal.aborted) {
+                    throw new Error('Upload cancelled by user');
+                }
+                
+                const file = files[i];
+                this.updateFileProgress(i, 0, 'preparing', 'Preparing...');
                 
                 try {
-                    await this.uploadSingleFile(file, folder, i);
-                    completedFiles++;
+                    // Convert file to base64
+                    const fileData = await this.fileToBase64(file);
+                    this.updateFileProgress(i, 25, 'uploading', 'Uploading...');
                     
-                    const overallProgress = (completedFiles / totalFiles) * 100;
-                    this.updateOverallProgress(overallProgress, `Uploaded ${completedFiles}/${totalFiles} files`);
+                    // Upload file
+                    const result = await this.apiCall('uploadFile', {
+                        folderId,
+                        fileData,
+                        fileName: file.name,
+                        mimeType: file.type
+                    }, 'POST');
                     
-                } catch (error) {
-                    console.error(`Failed to upload ${file.name}:`, error);
-                    this.updateFileProgress(i, 100, 'error', `Failed: ${error.message}`);
+                    if (result?.success) {
+                        this.updateFileProgress(i, 100, 'success', 'Uploaded');
+                        results.push({ ...result, success: true, file });
+                        
+                        // Add to recent uploads
+                        this.addToRecentUploads({
+                            id: result.fileId,
+                            name: file.name,
+                            thumbnailUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+                            isVideo: file.type.startsWith('video/'),
+                            uploadDate: new Date().toISOString(),
+                            size: file.size
+                        });
+                    } else {
+                        throw new Error(result?.message || 'Upload failed');
+                    }
+                    
+                } catch (fileError) {
+                    console.error(`Error uploading ${file.name}:`, fileError);
+                    this.updateFileProgress(i, 0, 'error', fileError.message);
+                    results.push({ success: false, fileName: file.name, error: fileError.message });
                 }
+                
+                uploadedBytes += file.size;
+                
+                // Update overall progress
+                const overallProgress = ((i + 1) / files.length) * 100;
+                const elapsedTime = Date.now() - startTime;
+                const uploadSpeed = uploadedBytes / (elapsedTime / 1000); // bytes per second
+                
+                this.updateOverallProgress(overallProgress, i + 1, files.length);
+                this.updateUploadSpeed(uploadSpeed);
             }
             
-            // Complete upload
-            this.completeUpload(completedFiles, totalFiles);
+            // Show completion message
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            if (successCount === totalCount) {
+                this.showNotification('Upload Complete', `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`, 'success');
+            } else {
+                this.showNotification('Upload Partial', `Uploaded ${successCount} of ${totalCount} files`, 'warning');
+            }
+            
+            // Update stats and refresh gallery
+            await this.updateStats();
+            this.renderRecentUploads();
+            
+            if (this.galleryFiles.length > 0) {
+                this.loadGallery();
+            }
             
         } catch (error) {
-            console.error('Upload process failed:', error);
+            console.error('Upload error:', error);
             this.showNotification('Upload Failed', error.message, 'error');
         } finally {
             this.uploadInProgress = false;
-        }
-    }
-
-    showUploadProgress() {
-        const panel = this.elements.uploadProgressPanel;
-        if (panel) {
-            panel.classList.remove('hidden');
-        }
-        
-        // Initialize file progress items
-        const fileProgressList = this.elements.fileProgressList;
-        if (fileProgressList) {
-            fileProgressList.innerHTML = '';
+            this.currentUploadController = null;
             
-            this.uploadQueue.forEach((file, index) => {
-                const item = document.createElement('div');
-                item.className = 'file-progress-item';
-                item.innerHTML = `
-                    <div class="file-progress-header">
-                        <span class="file-progress-name">${file.name}</span>
-                        <span class="file-progress-size">${this.formatFileSize(file.size)}</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="file-progress-${index}"></div>
-                    </div>
-                    <div class="file-progress-status" id="file-status-${index}">Waiting...</div>
-                `;
-                
-                fileProgressList.appendChild(item);
-            });
-        }
-    }
-
-    async uploadSingleFile(file, folder, index) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', folder);
-        formData.append('token', this.sessionToken);
-        
-        // Update file status
-        this.updateFileProgress(index, 0, 'uploading', 'Uploading...');
-        
-        try {
-            const response = await fetch(`${this.API_URL}?action=uploadFile`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Authorization': `Bearer ${this.sessionToken}`
-                }
-            });
+            // Hide progress panel after 3 seconds
+            setTimeout(() => {
+                this.elements.uploadProgressPanel?.classList.add('hidden');
+            }, 3000);
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const result = await response.json();
-            
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            
-            // Complete file upload
-            this.updateFileProgress(index, 100, 'success', 'Completed');
-            
-            // Add to recent uploads
-            this.addToRecentUploads({
-                name: file.name,
-                size: file.size,
-                folder: folder,
-                uploadTime: new Date().toISOString(),
-                url: result.url
-            });
-            
-            return result;
-            
-        } catch (error) {
-            this.updateFileProgress(index, 100, 'error', `Failed: ${error.message}`);
-            throw error;
-        }
-    }
-
-    updateFileProgress(index, progress, status, statusText) {
-        const progressBar = document.getElementById(`file-progress-${index}`);
-        const statusElement = document.getElementById(`file-status-${index}`);
-        
-        if (progressBar) {
-            progressBar.style.width = `${progress}%`;
-            
-            // Update color based on status
-            progressBar.className = `progress-fill ${status}`;
-        }
-        
-        if (statusElement) {
-            statusElement.textContent = statusText;
-            statusElement.className = `file-progress-status ${status}`;
-        }
-    }
-
-    updateOverallProgress(progress, statusText) {
-        const progressBar = this.elements.overallProgressBar;
-        const percentage = this.elements.overallPercentage;
-        
-        if (progressBar) {
-            progressBar.style.width = `${progress}%`;
-        }
-        
-        if (percentage) {
-            percentage.textContent = `${Math.round(progress)}%`;
-        }
-        
-        // Update status text if needed
-        const uploadStats = this.elements.uploadStats;
-        if (uploadStats) {
-            uploadStats.textContent = statusText;
-        }
-    }
-
-    completeUpload(completed, total) {
-        if (completed === total) {
-            this.showNotification('Upload Complete', `Successfully uploaded ${completed} files!`, 'success');
-        } else {
-            this.showNotification('Upload Finished', `Uploaded ${completed}/${total} files. Some files failed.`, 'warning');
-        }
-        
-        // Clear upload queue and hide progress after delay
-        setTimeout(() => {
+            // Reset form
+            this.elements.uploadForm?.reset();
             this.clearFileSelection();
-            this.hideUploadProgress();
-            this.renderRecentUploads();
-            
-            // Invalidate gallery cache to show new uploads
-            this.cache.invalidateGalleryData();
-        }, 3000);
-    }
-
-    hideUploadProgress() {
-        const panel = this.elements.uploadProgressPanel;
-        if (panel) {
-            panel.classList.add('hidden');
         }
     }
 
-    addToRecentUploads(uploadInfo) {
-        this.recentUploads.unshift(uploadInfo);
+    initializeFileProgress(files) {
+        if (!this.elements.fileProgressList) return;
         
-        // Keep only last 20 uploads
-        if (this.recentUploads.length > 20) {
-            this.recentUploads = this.recentUploads.slice(0, 20);
-        }
-        
-        // Save to localStorage
-        localStorage.setItem('recentUploads', JSON.stringify(this.recentUploads));
-    }
-
-    renderRecentUploads() {
-        const grid = this.elements.recentUploadsGrid;
-        if (!grid) return;
-        
-        if (this.recentUploads.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-recent">
-                    <i data-lucide="upload"></i>
-                    <p>No recent uploads</p>
-                </div>
-            `;
-        } else {
-            grid.innerHTML = '';
+        const progressHTML = files.map((file, index) => {
+            const isVideo = file.type.startsWith('video/');
+            const fileSize = this.formatFileSize(file.size);
             
-            this.recentUploads.slice(0, 6).forEach(upload => {
-                const item = document.createElement('div');
-                item.className = 'recent-upload-item';
-                
-                const timeAgo = this.getTimeAgo(upload.uploadTime);
-                
-                item.innerHTML = `
-                    <div class="recent-upload-thumb">
-                        ${this.isVideoFile(upload.name) ? '<i data-lucide="video"></i>' : '<i data-lucide="image"></i>'}
-                    </div>
-                    <div class="recent-upload-info">
-                        <div class="recent-upload-name">${this.truncateFilename(upload.name, 20)}</div>
-                        <div class="recent-upload-details">
-                            <span>${this.formatFileSize(upload.size)}</span>
-                            <span>${timeAgo}</span>
+            return `
+                <div class="file-progress-item" data-index="${index}" id="file-progress-${index}">
+                    <div class="file-progress-header">
+                        <div class="file-progress-name" title="${file.name}">${file.name}</div>
+                        <div class="file-progress-status" id="file-status-${index}">
+                            <i data-lucide="clock"></i>
+                            <span>Waiting...</span>
                         </div>
                     </div>
-                `;
-                
-                grid.appendChild(item);
-            });
-        }
+                    <div class="file-progress-bar-container">
+                        <div class="file-progress-bar" id="file-bar-${index}"></div>
+                    </div>
+                    <div class="file-meta">
+                        <span class="file-type">${isVideo ? 'Video' : 'Image'}</span>
+                        <span class="file-size">${fileSize}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
         
+        this.elements.fileProgressList.innerHTML = progressHTML;
+        
+        // Reinitialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
     }
 
-    getTimeAgo(dateString) {
-        const now = new Date();
-        const uploadTime = new Date(dateString);
-        const diffInMinutes = Math.floor((now - uploadTime) / (1000 * 60));
+    updateFileProgress(index, percent, status, message) {
+        const fileItem = document.getElementById(`file-progress-${index}`);
+        const fileBar = document.getElementById(`file-bar-${index}`);
+        const fileStatus = document.getElementById(`file-status-${index}`);
         
-        if (diffInMinutes < 1) return 'Just now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (!fileItem || !fileBar || !fileStatus) return;
         
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours}h ago`;
+        // Update item class
+        fileItem.className = `file-progress-item ${status}`;
         
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 7) return `${diffInDays}d ago`;
+        // Update progress bar
+        fileBar.style.width = `${percent}%`;
         
-        return uploadTime.toLocaleDateString();
+        // Update status
+        const icons = {
+            waiting: 'clock',
+            preparing: 'loader',
+            uploading: 'upload',
+            success: 'check-circle',
+            error: 'x-circle'
+        };
+        
+        fileStatus.innerHTML = `
+            <i data-lucide="${icons[status] || 'clock'}"></i>
+            <span>${message}</span>
+        `;
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
 
-    populateUploadFolders() {
-        const select = this.elements.folderSelectUpload;
-        const parentSelect = this.elements.parentFolderSelect;
-        
-        if (!this.folderTree) return;
-        
-        // Populate upload folder select
-        if (select) {
-            select.innerHTML = '<option value="">Select Destination</option>';
-            
-            Object.keys(this.folderTree).forEach(occasion => {
-                Object.keys(this.folderTree[occasion]).forEach(year => {
-                    const folderPath = `${occasion}/${year}`;
-                    const option = document.createElement('option');
-                    option.value = folderPath;
-                    option.textContent = `${this.formatOccasionName(occasion)} - ${year}`;
-                    select.appendChild(option);
-                    
-                    // Add subfolders
-                    if (this.folderTree[occasion][year] && this.folderTree[occasion][year].length) {
-                        this.folderTree[occasion][year].forEach(subfolder => {
-                            const subOption = document.createElement('option');
-                            subOption.value = `${occasion}/${year}/${subfolder}`;
-                            subOption.textContent = `${this.formatOccasionName(occasion)} - ${year} - ${this.formatOccasionName(subfolder)}`;
-                            select.appendChild(subOption);
-                        });
-                    }
-                });
-            });
+    updateOverallProgress(percent, completed, total) {
+        if (this.elements.overallProgressBar) {
+            this.elements.overallProgressBar.style.width = `${percent}%`;
+            this.elements.overallProgressBar.setAttribute('aria-valuenow', percent);
         }
         
-        // Populate parent folder select for new folder creation
-        if (parentSelect) {
-            parentSelect.innerHTML = '<option value="">Root Directory</option>';
+        if (this.elements.overallPercentage) {
+            this.elements.overallPercentage.textContent = `${Math.round(percent)}%`;
+        }
+        
+        if (this.elements.uploadStats) {
+            this.elements.uploadStats.textContent = `${completed} of ${total} files uploaded`;
+        }
+    }
+
+    updateUploadSpeed(bytesPerSecond) {
+        if (!this.elements.uploadSpeed) return;
+        
+        const speed = this.formatFileSize(bytesPerSecond);
+        this.elements.uploadSpeed.textContent = `${speed}/s`;
+    }
+
+    cancelUpload() {
+        if (this.currentUploadController) {
+            this.currentUploadController.abort();
+            this.showNotification('Upload Cancelled', 'Upload process has been cancelled', 'warning');
+        }
+    }
+
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ===============================================================
+    // Recent Uploads Management
+    // ===============================================================
+    
+    addToRecentUploads(uploadInfo) {
+        // Add to beginning of array
+        this.recentUploads.unshift(uploadInfo);
+        
+        // Keep only last 20 uploads
+        this.recentUploads = this.recentUploads.slice(0, 20);
+        
+        // Save to localStorage
+        localStorage.setItem('recentUploads', JSON.stringify(this.recentUploads));
+        
+        // Re-render recent uploads
+        this.renderRecentUploads();
+    }
+
+    renderRecentUploads() {
+        if (!this.elements.recentUploadsGrid) return;
+        
+        if (this.recentUploads.length === 0) {
+            this.elements.recentUploadsGrid.innerHTML = `
+                <div class="recent-uploads-empty">
+                    <i data-lucide="upload" aria-hidden="true"></i>
+                    <p>No recent uploads</p>
+                </div>
+            `;
+        } else {
+            const recentHTML = this.recentUploads.map((upload, index) => `
+                <div class="recent-upload-item" onclick="gallery.viewRecentUpload('${upload.id}')" role="button" tabindex="0" aria-label="View ${upload.name}">
+                    ${upload.thumbnailUrl ? `
+                        <img src="${upload.thumbnailUrl}" alt="${upload.name}" class="recent-upload-thumb">
+                    ` : `
+                        <div class="recent-upload-thumb placeholder">
+                            <i data-lucide="${upload.isVideo ? 'video' : 'image'}"></i>
+                        </div>
+                    `}
+                    <div class="recent-upload-overlay">
+                        <div class="recent-upload-info">${upload.name}</div>
+                    </div>
+                </div>
+            `).join('');
             
-            Object.keys(this.folderTree).forEach(occasion => {
-                const option = document.createElement('option');
-                option.value = occasion;
-                option.textContent = this.formatOccasionName(occasion);
-                parentSelect.appendChild(option);
-                
-                Object.keys(this.folderTree[occasion]).forEach(year => {
-                    const yearOption = document.createElement('option');
-                    yearOption.value = `${occasion}/${year}`;
-                    yearOption.textContent = `${this.formatOccasionName(occasion)} - ${year}`;
-                    parentSelect.appendChild(yearOption);
-                });
-            });
+            this.elements.recentUploadsGrid.innerHTML = recentHTML;
+        }
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    viewRecentUpload(fileId) {
+        // Find the file in current gallery or load it
+        const file = this.galleryFiles.find(f => f.id === fileId);
+        if (file) {
+            const index = this.filteredFiles.findIndex(f => f.id === fileId);
+            if (index !== -1) {
+                this.showLightbox(index);
+            }
+        } else {
+            this.showNotification('Info', 'This file may be in a different album', 'info');
         }
     }
 
     async handleCreateFolder(e) {
         e.preventDefault();
         
-        if (!this.isAuthenticated) {
-            this.showNotification('Authentication Required', 'Please login to create folders.', 'error');
-            return;
-        }
-        
-        const parentFolder = this.elements.parentFolderSelect?.value || '';
+        const parentFolderId = this.elements.parentFolderSelect?.value;
         const folderName = this.elements.newFolderName?.value?.trim();
         
+        if (!parentFolderId) {
+            this.showNotification('Error', 'Please select a parent folder', 'error');
+            return;
+        }
+        
         if (!folderName) {
-            this.showNotification('Folder Name Required', 'Please enter a folder name.', 'warning');
+            this.showNotification('Error', 'Please enter a folder name', 'error');
             return;
         }
         
-        // Validate folder name
-        if (!/^[a-zA-Z0-9\s\-_]+$/.test(folderName)) {
-            this.showNotification('Invalid Name', 'Folder name can only contain letters, numbers, spaces, hyphens, and underscores.', 'error');
+        const result = await this.apiCall('createFolder', {
+            parentFolderId,
+            folderName
+        }, 'POST');
+        
+        if (result?.success) {
+            this.showNotification('Success', `Folder "${folderName}" created successfully`, 'success');
+            this.elements.createFolderForm?.reset();
+            
+            // Refresh folder tree
+            await this.fetchFolderTree();
+        }
+    }
+
+    // ===============================================================
+    // Admin Actions
+    // ===============================================================
+    
+    showRenameModal(fileId, currentName) {
+        const newName = prompt('Enter new name for the file:', currentName);
+        if (newName && newName !== currentName) {
+            this.renameFile(fileId, newName);
+        }
+    }
+
+    async renameFile(fileId, newName) {
+        const result = await this.apiCall('renameItem', { 
+            id: fileId, 
+            newName: newName,
+            type: 'file'
+        }, 'POST');
+        
+        if (result?.success) {
+            this.showNotification('Success', 'File renamed successfully', 'success');
+            
+            // Update the file in current gallery
+            const fileIndex = this.galleryFiles.findIndex(f => f.id === fileId);
+            if (fileIndex !== -1) {
+                this.galleryFiles[fileIndex].name = newName;
+            }
+            
+            const filteredIndex = this.filteredFiles.findIndex(f => f.id === fileId);
+            if (filteredIndex !== -1) {
+                this.filteredFiles[filteredIndex].name = newName;
+            }
+            
+            this.renderGallery(this.filteredFiles);
+        }
+    }
+
+    async deleteFile(fileId) {
+        if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
             return;
         }
         
-        try {
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn?.innerHTML;
+        const result = await this.apiCall('deleteFile', { id: fileId }, 'POST');
+        
+        if (result?.success) {
+            this.showNotification('Success', 'File deleted successfully', 'success');
             
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i data-lucide="loader" class="animate-spin"></i><span>Creating...</span>';
-                submitBtn.disabled = true;
-            }
+            // Remove from current gallery
+            this.galleryFiles = this.galleryFiles.filter(f => f.id !== fileId);
+            this.filteredFiles = this.filteredFiles.filter(f => f.id !== fileId);
+            this.renderGallery(this.filteredFiles);
             
-            const response = await this.makeAPICall('createFolder', {
-                method: 'POST',
-                body: JSON.stringify({
-                    parentFolder,
-                    folderName,
-                    token: this.sessionToken
-                })
-            });
+            // Remove from recent uploads
+            this.recentUploads = this.recentUploads.filter(u => u.id !== fileId);
+            localStorage.setItem('recentUploads', JSON.stringify(this.recentUploads));
+            this.renderRecentUploads();
             
-            if (response.success) {
-                this.showNotification('Folder Created', `Successfully created folder "${folderName}".`, 'success');
-                
-                // Clear form
-                if (this.elements.newFolderName) {
-                    this.elements.newFolderName.value = '';
-                }
-                
-                // Refresh folder tree
-                this.cache.delete('folder_tree');
-                await this.fetchFolderTreeWithCache();
-            } else {
-                throw new Error(response.message || 'Failed to create folder');
-            }
-            
-        } catch (error) {
-            console.error('Failed to create folder:', error);
-            this.showNotification('Creation Failed', error.message, 'error');
-        } finally {
-            // Reset submit button
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            if (submitBtn && originalText) {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
+            // Update stats
+            this.updateStats();
         }
     }
 
-    // ===============================================================
-    // Lightbox Implementation
-    // ===============================================================
-
-    openLightbox(index) {
-        if (!this.filteredFiles || index < 0 || index >= this.filteredFiles.length) return;
-        
-        this.currentLightboxIndex = index;
-        const file = this.filteredFiles[index];
-        
-        const modal = this.elements.lightboxModal;
-        const image = this.elements.lightboxImage;
-        const video = this.elements.lightboxVideo;
-        const title = this.elements.lightboxTitle;
-        const filename = this.elements.lightboxFilename;
-        const details = this.elements.lightboxDetails;
-        const counter = this.elements.lightboxCounter;
-        
-        if (!modal) return;
-        
-        // Update content
-        if (title) title.textContent = this.truncateFilename(file.name, 50);
-        if (filename) filename.textContent = file.name;
-        if (details) details.textContent = `${this.formatFileSize(file.size || 0)} • ${this.formatDate(file.dateCreated)}`;
-        if (counter) counter.textContent = `${index + 1} / ${this.filteredFiles.length}`;
-        
-        // Show appropriate media element
-        const isVideo = this.isVideoFile(file.name);
-        
-        if (isVideo) {
-            if (image) image.style.display = 'none';
-            if (video) {
-                video.src = file.url;
-                video.style.display = 'block';
-                video.load();
-            }
-        } else {
-            if (video) video.style.display = 'none';
-            if (image) {
-                image.src = file.url;
-                image.alt = file.name;
-                image.style.display = 'block';
-            }
-        }
-        
-        // Show modal
-        modal.classList.remove('hidden');
-        
-        // Focus management for accessibility
-        modal.setAttribute('aria-hidden', 'false');
-        this.elements.lightboxClose?.focus();
-        
-        // Disable body scroll
-        document.body.style.overflow = 'hidden';
-    }
-
-    hideLightbox() {
-        const modal = this.elements.lightboxModal;
-        if (!modal) return;
-        
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-        
-        // Reset media
-        if (this.elements.lightboxVideo) {
-            this.elements.lightboxVideo.src = '';
-        }
-        
-        // Enable body scroll
-        document.body.style.overflow = '';
-    }
-
-    navigateLightbox(direction) {
-        if (!this.filteredFiles || this.filteredFiles.length === 0) return;
-        
-        let newIndex = this.currentLightboxIndex + direction;
-        
-        // Handle wraparound
-        if (newIndex < 0) {
-            newIndex = this.filteredFiles.length - 1;
-        } else if (newIndex >= this.filteredFiles.length) {
-            newIndex = 0;
-        }
-        
-        this.openLightbox(newIndex);
-    }
-
-    downloadCurrentImage() {
-        if (!this.filteredFiles || this.currentLightboxIndex < 0) return;
-        
-        const file = this.filteredFiles[this.currentLightboxIndex];
-        if (!file) return;
-        
-        // Create download link
-        const link = document.createElement('a');
-        link.href = file.url;
-        link.download = file.name;
-        link.target = '_blank';
-        
-        // Trigger download
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        this.showNotification('Download Started', `Downloading ${file.name}...`, 'info');
-    }
-
-    zoomImage(factor) {
-        const image = this.elements.lightboxImage;
-        if (!image || image.style.display === 'none') return;
-        
-        const currentScale = parseFloat(image.style.transform.replace('scale(', '').replace(')', '')) || 1;
-        const newScale = Math.max(0.5, Math.min(3, currentScale * factor));
-        
-        image.style.transform = `scale(${newScale})`;
-        image.style.transformOrigin = 'center center';
-    }
-
-    toggleFullscreen() {
-        const modal = this.elements.lightboxModal;
-        if (!modal) return;
-        
-        if (!document.fullscreenElement) {
-            modal.requestFullscreen?.() ||
-            modal.webkitRequestFullscreen?.() ||
-            modal.msRequestFullscreen?.();
-        } else {
-            document.exitFullscreen?.() ||
-            document.webkitExitFullscreen?.() ||
-            document.msExitFullscreen?.();
-        }
-    }
-
-    // ===============================================================
-    // Theme Management
-    // ===============================================================
-
-    handleTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        this.setTheme(savedTheme);
-    }
-
-    toggleTheme() {
-        const currentTheme = document.body.getAttribute('data-theme') || 'light';
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        this.setTheme(newTheme);
-    }
-
-    setTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        
-        // Update theme toggle icon
-        const moonIcon = this.elements.moonIcon;
-        const sunIcon = this.elements.sunIcon;
-        
-        if (moonIcon && sunIcon) {
-            if (theme === 'dark') {
-                moonIcon.classList.add('hidden');
-                sunIcon.classList.remove('hidden');
-            } else {
-                moonIcon.classList.remove('hidden');
-                sunIcon.classList.add('hidden');
-            }
-        }
-    }
-
-    // ===============================================================
-    // Keyboard Navigation
-    // ===============================================================
-
-    handleKeyboard(e) {
-        // Lightbox navigation
-        if (!this.elements.lightboxModal?.classList.contains('hidden')) {
-            switch (e.key) {
-                case 'Escape':
-                    this.hideLightbox();
-                    break;
-                case 'ArrowLeft':
-                    this.navigateLightbox(-1);
-                    break;
-                case 'ArrowRight':
-                    this.navigateLightbox(1);
-                    break;
-                case 'd':
-                case 'D':
-                    if (!e.ctrlKey) {
-                        e.preventDefault();
-                        this.downloadCurrentImage();
-                    }
-                    break;
-                case 'f':
-                case 'F':
-                    if (!e.ctrlKey) {
-                        e.preventDefault();
-                        this.toggleFullscreen();
-                    }
-                    break;
-            }
+    async deleteFolder(folderId) {
+        if (!confirm('Are you sure you want to delete this folder and all its contents? This action cannot be undone.')) {
             return;
         }
         
-        // Modal management
-        if (e.key === 'Escape') {
-            this.hideAllModals();
-        }
+        const result = await this.apiCall('deleteFolder', { id: folderId }, 'POST');
         
-        // Quick navigation
-        if (e.ctrlKey || e.metaKey) {
-            switch (e.key) {
-                case '1':
-                    e.preventDefault();
-                    this.navigateToSection('home');
-                    break;
-                case '2':
-                    e.preventDefault();
-                    this.navigateToSection('gallery');
-                    break;
-                case '3':
-                    e.preventDefault();
-                    if (this.isAuthenticated) {
-                        this.navigateToSection('upload');
-                    }
-                    break;
-                case '4':
-                    e.preventDefault();
-                    this.navigateToSection('about');
-                    break;
-            }
-        }
-    }
-
-    hideAllModals() {
-        this.hideLoginModal();
-        this.hideLightbox();
-    }
-
-    // ===============================================================
-    // Notification System
-    // ===============================================================
-
-    showNotification(title, message, type = 'info', duration = 5000) {
-        const toast = this.elements.toast;
-        if (!toast) return;
-        
-        const toastIcon = this.elements.toastIcon;
-        const toastTitle = this.elements.toastTitle;
-        const toastMessage = this.elements.toastMessage;
-        
-        // Update content
-        if (toastTitle) toastTitle.textContent = title;
-        if (toastMessage) toastMessage.textContent = message;
-        
-        // Update icon
-        if (toastIcon) {
-            let iconName = 'info';
-            switch (type) {
-                case 'success':
-                    iconName = 'check-circle';
-                    break;
-                case 'error':
-                    iconName = 'alert-circle';
-                    break;
-                case 'warning':
-                    iconName = 'alert-triangle';
-                    break;
-            }
-            toastIcon.innerHTML = `<i data-lucide="${iconName}"></i>`;
-        }
-        
-        // Update styling
-        toast.className = `toast ${type}`;
-        toast.classList.remove('hidden');
-        
-        // Auto-hide after duration (unless duration is 0)
-        if (duration > 0) {
-            setTimeout(() => {
-                this.hideToast();
-            }, duration);
-        }
-        
-        // Initialize icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
-
-    hideToast() {
-        const toast = this.elements.toast;
-        if (toast) {
-            toast.classList.add('hidden');
+        if (result?.success) {
+            this.showNotification('Success', 'Folder deleted successfully', 'success');
+            
+            // Refresh folder tree
+            await this.fetchFolderTree();
+            
+            // Clear current gallery if it was showing the deleted folder
+            this.galleryFiles = [];
+            this.filteredFiles = [];
+            this.renderGallery([]);
         }
     }
 
     // ===============================================================
-    // Error Recovery
+    // Utility Functions
     // ===============================================================
-
-    retryFailedOperations() {
-        // Retry failed folder tree fetch
-        if (!this.folderTree && navigator.onLine) {
-            console.log('Retrying folder tree fetch...');
-            this.fetchFolderTreeWithCache().catch(error => {
-                console.error('Retry failed:', error);
-            });
-        }
-        
-        // Retry failed stats fetch
-        if (navigator.onLine) {
-            console.log('Retrying stats fetch...');
-            this.updateStatsWithProgress().catch(error => {
-                console.error('Stats retry failed:', error);
-            });
-        }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
+}
 
-    handleError(error, context = 'Unknown') {
-        console.error(`Error in ${context}:`, error);
-        
-        // Show user-friendly error message
-        let userMessage = 'An unexpected error occurred.';
-        
-        if (!navigator.onLine) {
-            userMessage = 'You are offline. Please check your internet connection.';
-        } else if (error.message.includes('fetch')) {
-            userMessage = 'Unable to connect to the server. Please try again later.';
-        } else if (error.status === 403) {
-            userMessage = 'Access denied. Please check your permissions.';
-        } else if (error.status >= 500) {
-            userMessage = 'Server error. Please try again later.';
-        }
-        
-        this.showNotification('Error', userMessage, 'error');
-        
-        // Log detailed error for debugging
-        if (window.console && console.error) {
-            console.error('Detailed error info:', {
-                error: error,
-                context: context,
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                url: window.location.href
-            });
-        }
+// ===============================================================
+// Global Functions
+// ===============================================================
+
+// Navigation helper for inline onclick handlers
+function navigateToSection(section) {
+    if (window.gallery) {
+        window.gallery.navigateToSection(section);
     }
 }
 
@@ -2138,56 +1656,35 @@ class ModernSchoolGallery {
 // Initialize Application
 // ===============================================================
 
-// Wait for DOM and dependencies to load
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for required dependencies
-    if (typeof CacheManager === 'undefined' || typeof ProgressBar === 'undefined') {
-        console.error('Required dependencies not loaded');
-        document.getElementById('error-boundary')?.classList.remove('hidden');
-        return;
+    // Initialize gallery
+    window.gallery = new ModernSchoolGallery();
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
     }
     
-    // Initialize gallery
-    try {
-        window.gallery = new ModernSchoolGallery();
-        console.log('Kendriya Vidyalaya Gallery application started');
-    } catch (error) {
-        console.error('Failed to initialize gallery application:', error);
-        
-        // Show error boundary
-        const errorBoundary = document.getElementById('error-boundary');
-        const errorMessage = document.getElementById('error-message');
-        
-        if (errorBoundary && errorMessage) {
-            errorMessage.textContent = 'Failed to start the application. Please refresh the page and try again.';
-            errorBoundary.classList.remove('hidden');
-        }
-    }
+    console.log('Modern School Gallery loaded successfully');
 });
 
 // Handle page visibility changes
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden && window.gallery) {
-        // Page became visible again, retry any failed operations
-        window.gallery.retryFailedOperations();
+        // Refresh session when page becomes visible
+        window.gallery.checkSession();
     }
 });
 
-// Global error handler
-window.addEventListener('error', (e) => {
-    console.error('Global error:', e.error);
-    
-    if (window.gallery && typeof window.gallery.handleError === 'function') {
-        window.gallery.handleError(e.error, 'Global');
+// Handle online/offline status
+window.addEventListener('online', () => {
+    if (window.gallery) {
+        window.gallery.showNotification('Connection Restored', 'You are back online', 'success');
     }
 });
 
-// Unhandled promise rejection handler
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('Unhandled promise rejection:', e.reason);
-    
-    if (window.gallery && typeof window.gallery.handleError === 'function') {
-        window.gallery.handleError(e.reason, 'Promise');
+window.addEventListener('offline', () => {
+    if (window.gallery) {
+        window.gallery.showNotification('Connection Lost', 'You are currently offline', 'warning');
     }
 });
-
