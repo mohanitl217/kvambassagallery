@@ -203,6 +203,14 @@ class ModernSchoolGallery {
         if (this.elements.lightboxDownload) {
             this.elements.lightboxDownload.addEventListener('click', () => this.downloadCurrentImage());
         }
+        
+        // Add fullscreen toggle
+        document.getElementById('lightbox-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
+        
+        // Add zoom functionality
+        document.getElementById('lightbox-zoom-in')?.addEventListener('click', () => this.zoomImage(1.2));
+        document.getElementById('lightbox-zoom-out')?.addEventListener('click', () => this.zoomImage(0.8));
+        document.getElementById('lightbox-zoom-reset')?.addEventListener('click', () => this.resetZoom());
         if (this.elements.lightboxBackdrop) {
             this.elements.lightboxBackdrop.addEventListener('click', () => this.hideLightbox());
         }
@@ -845,8 +853,25 @@ class ModernSchoolGallery {
                         ` : ''}
                         
                         <div class="media-overlay">
+                            <div class="media-actions">
+                                <button class="media-action-btn" onclick="window.open('${file.downloadUrl}', '_blank')" aria-label="Download" title="Download">
+                                    <i data-lucide="download"></i>
+                                </button>
+                                <button class="media-action-btn" onclick="window.open('${file.viewUrl}', '_blank')" aria-label="View in Drive" title="View in Google Drive">
+                                    <i data-lucide="external-link"></i>
+                                </button>
+                                ${this.isAuthenticated ? `
+                                    <button class="media-action-btn" onclick="gallery.showRenameModal('${file.id}', '${file.name.replace(/'/g, '\\\'')}')" aria-label="Rename" title="Rename file">
+                                        <i data-lucide="edit-3"></i>
+                                    </button>
+                                    <button class="media-action-btn delete-action" onclick="gallery.deleteFile('${file.id}')" aria-label="Delete" title="Delete file">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
                             <div class="media-info">
-                                <div>${file.formattedSize || 'Unknown size'}</div>
+                                <div class="file-size">${file.formattedSize || 'Unknown size'}</div>
+                                <div class="file-type">${isVideo ? 'Video' : 'Image'}</div>
                             </div>
                         </div>
                     </div>
@@ -1004,6 +1029,37 @@ class ModernSchoolGallery {
         }
     }
 
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            this.elements.lightboxModal.requestFullscreen().catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    zoomImage(factor) {
+        const image = this.elements.lightboxImage;
+        if (!image) return;
+        
+        const currentTransform = image.style.transform || 'scale(1)';
+        const currentScale = parseFloat(currentTransform.match(/scale\(([^)]+)\)/)?.[1] || 1);
+        const newScale = Math.max(0.5, Math.min(5, currentScale * factor));
+        
+        image.style.transform = `scale(${newScale})`;
+        image.style.transformOrigin = 'center center';
+        image.style.transition = 'transform 0.3s ease';
+    }
+
+    resetZoom() {
+        const image = this.elements.lightboxImage;
+        if (image) {
+            image.style.transform = 'scale(1)';
+            image.style.transition = 'transform 0.3s ease';
+        }
+    }
+
     // ===============================================================
     // File Upload
     // ===============================================================
@@ -1060,19 +1116,63 @@ class ModernSchoolGallery {
         this.updateUploadProgress(0, 'Preparing upload...');
         
         try {
-            const uploadPromises = Array.from(files).map((file, index) => 
-                this.uploadSingleFile(file, folderId, index, files.length)
-            );
+            // Prepare files for batch upload
+            const fileDataArray = [];
+            const fileArray = Array.from(files);
             
-            const results = await Promise.all(uploadPromises);
-            const successCount = results.filter(r => r?.success).length;
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
+                this.updateUploadProgress(
+                    (i / fileArray.length) * 50,
+                    `Preparing ${file.name}...`
+                );
+                
+                const fileData = await this.fileToBase64(file);
+                fileDataArray.push({
+                    fileData,
+                    fileName: file.name,
+                    mimeType: file.type
+                });
+            }
             
+            this.updateUploadProgress(60, 'Uploading files...');
+            
+            // Use batch upload for multiple files
+            let result;
+            if (fileDataArray.length === 1) {
+                result = await this.apiCall('uploadFile', {
+                    folderId,
+                    ...fileDataArray[0]
+                }, 'POST');
+                
+                if (result?.success) {
+                    result = {
+                        success: true,
+                        successCount: 1,
+                        totalFiles: 1,
+                        results: [result]
+                    };
+                }
+            } else {
+                result = await this.apiCall('uploadMultipleFiles', {
+                    folderId,
+                    files: fileDataArray
+                }, 'POST');
+            }
+            
+            this.updateUploadProgress(100, 'Upload complete!');
             this.showUploadProgress(false);
             
-            if (successCount === files.length) {
-                this.showNotification('Success', `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`, 'success');
+            if (result?.success) {
+                const { successCount, totalFiles } = result;
+                
+                if (successCount === totalFiles) {
+                    this.showNotification('Success', `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`, 'success');
+                } else {
+                    this.showNotification('Partial Success', `Uploaded ${successCount} of ${totalFiles} files`, 'warning');
+                }
             } else {
-                this.showNotification('Partial Success', `Uploaded ${successCount} of ${files.length} files`, 'warning');
+                this.showNotification('Upload Failed', 'Failed to upload files', 'error');
             }
             
             // Reset form
@@ -1088,6 +1188,15 @@ class ModernSchoolGallery {
             this.showUploadProgress(false);
             this.showNotification('Upload Failed', error.message, 'error');
         }
+    }
+
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     }
 
     async uploadSingleFile(file, folderId, index, total) {
@@ -1195,6 +1304,38 @@ class ModernSchoolGallery {
     // Admin Actions
     // ===============================================================
     
+    showRenameModal(fileId, currentName) {
+        const newName = prompt('Enter new name for the file:', currentName);
+        if (newName && newName !== currentName) {
+            this.renameFile(fileId, newName);
+        }
+    }
+
+    async renameFile(fileId, newName) {
+        const result = await this.apiCall('renameItem', { 
+            id: fileId, 
+            newName: newName,
+            type: 'file'
+        }, 'POST');
+        
+        if (result?.success) {
+            this.showNotification('Success', 'File renamed successfully', 'success');
+            
+            // Update the file in current gallery
+            const fileIndex = this.galleryFiles.findIndex(f => f.id === fileId);
+            if (fileIndex !== -1) {
+                this.galleryFiles[fileIndex].name = newName;
+            }
+            
+            const filteredIndex = this.filteredFiles.findIndex(f => f.id === fileId);
+            if (filteredIndex !== -1) {
+                this.filteredFiles[filteredIndex].name = newName;
+            }
+            
+            this.renderGallery(this.filteredFiles);
+        }
+    }
+
     async deleteFile(fileId) {
         if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
             return;
