@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // CONFIGURATION
     // ===============================================================
-    const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec'; // ❗ PASTE YOUR URL HERE
+    // ❗ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+    const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
     
     // ===============================================================
     // STATE & DOM ELEMENTS
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyMessage = document.getElementById('empty-message');
     const searchInput = document.getElementById('search-input');
     
+    // Auth elements
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
@@ -28,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLogout = document.getElementById('nav-logout');
     const navUpload = document.getElementById('nav-upload');
 
+    // Upload elements
     const uploadForm = document.getElementById('upload-form');
     const folderSelectUpload = document.getElementById('folder-select-upload');
     const fileInput = document.getElementById('file-input');
@@ -35,9 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('upload-progress-bar');
     const uploadStatus = document.getElementById('upload-status');
     
+    // Modals
     const lightboxModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
     const videoModal = new bootstrap.Modal(document.getElementById('videoModal'));
     
+    // Toast notifications
     const toastElement = document.getElementById('notification-toast');
     const toast = new bootstrap.Toast(toastElement);
 
@@ -60,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // EVENT LISTENERS
     // ===============================================================
     function setupEventListeners() {
+        // Navigation
         navLinks.forEach(link => {
             if (!link.parentElement.id?.includes('logout')) {
                 link.addEventListener('click', (e) => {
@@ -69,28 +75,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Gallery filters (UPDATED LOGIC)
         occasionSelect.addEventListener('change', () => {
             populateYearSelect();
-            viewAlbumBtn.disabled = !occasionSelect.value; // ** CHANGE **
+            viewAlbumBtn.disabled = !occasionSelect.value;
         });
         yearSelect.addEventListener('change', () => {
             populateSubfolderSelect();
-            viewAlbumBtn.disabled = !yearSelect.value; // ** CHANGE **
+            viewAlbumBtn.disabled = !occasionSelect.value; // Still depends on occasion being selected
         });
         subfolderSelect.addEventListener('change', () => {
-             viewAlbumBtn.disabled = !subfolderSelect.value;
+            viewAlbumBtn.disabled = !occasionSelect.value;
         });
-
         viewAlbumBtn.addEventListener('click', loadGallery);
         searchInput.addEventListener('input', filterGallery);
 
+        // Auth
         loginForm.addEventListener('submit', handleLogin);
         navLogout.addEventListener('click', handleLogout);
 
+        // Upload
         uploadForm.addEventListener('submit', handleUpload);
 
+        // Theme toggle
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
         
+        // Stop video when modal is closed
         document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
             document.getElementById('video-player').pause();
         });
@@ -103,13 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
         showSpinner(true);
         try {
             let response;
-            const params = new URLSearchParams(body);
-            const url = `${API_URL}?action=${action}&${params}`;
-
             if (method === 'GET') {
-                response = await fetch(url);
+                const params = new URLSearchParams(body);
+                response = await fetch(`${API_URL}?action=${action}&${params}`);
             } else { // POST
-                body.token = sessionStorage.getItem('adminToken');
+                body.action = action;
+                if (sessionStorage.getItem('adminToken')) {
+                    body.token = sessionStorage.getItem('adminToken');
+                }
                 response = await fetch(API_URL, {
                     method: 'POST',
                     mode: 'cors',
@@ -119,11 +130,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
-            if (result.error) throw new Error(result.message || 'An unknown error occurred.');
+            
+            if (result.error) {
+                throw new Error(result.message || 'An unknown error occurred.');
+            }
             return result;
-
         } catch (error) {
             console.error('API Call Error:', error);
             showNotification('Error', `Failed to communicate with the server: ${error.message}`, 'danger');
@@ -132,9 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showSpinner(false);
         }
     }
-    
+
     // ===============================================================
-    // UI & NAVIGATION (No changes in this section)
+    // UI, THEME, & AUTH (No changes in these sections)
     // ===============================================================
     function navigateToSection(hash) {
         const targetId = hash.substring(1);
@@ -155,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const toastTitle = document.getElementById('toast-title');
         const toastBody = document.getElementById('toast-body');
         
-        toastElement.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white');
+        toastElement.className = 'toast'; // Reset classes
         toastElement.classList.add(`bg-${type}`, 'text-white');
         
         toastTitle.textContent = title;
@@ -185,16 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
         handleTheme();
     }
 
-    // ===============================================================
-    // AUTHENTICATION (No changes in this section)
-    // ===============================================================
     async function handleLogin(e) {
         e.preventDefault();
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        
         const result = await apiCall('login', { username, password }, 'POST');
-        
         if (result && result.success) {
             sessionStorage.setItem('adminToken', result.token);
             updateAdminUI(true);
@@ -220,21 +231,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function checkSession() {
-        const token = sessionStorage.getItem('adminToken');
-        if (!token) return;
-        const result = await apiCall('checkSession', { token }, 'POST');
-        updateAdminUI(result && result.success);
+        const result = await apiCall('checkSession', { token: sessionToken }, 'POST');
+        if (result && result.success) {
+            updateAdminUI(true);
+        } else {
+            sessionStorage.removeItem('adminToken');
+            updateAdminUI(false);
+        }
     }
     
     // ===============================================================
     // GALLERY LOGIC (UPDATED)
     // ===============================================================
     async function fetchFolderTree() {
-        const data = await apiCall('getFolderTree');
+        const data = await apiCall('getFolderTree', {}, 'GET');
         if (data && !data.error) {
             folderTree = data;
             populateOccasionSelect();
-            populateUploadFolderSelect(); // ** FIX applied here **
+            populateUploadFolderSelect();
         }
     }
     
@@ -242,24 +256,28 @@ document.addEventListener('DOMContentLoaded', () => {
         occasionSelect.innerHTML = '<option value="">-- Select Occasion --</option>';
         if (!folderTree || !folderTree.children) return;
         folderTree.children.forEach(occasion => {
-            const option = new Option(occasion.name, occasion.id);
+            const option = document.createElement('option');
+            option.value = occasion.id;
+            option.textContent = occasion.name;
             occasionSelect.appendChild(option);
         });
     }
 
     function populateYearSelect() {
         const occasionId = occasionSelect.value;
-        yearSelect.innerHTML = '<option value="">-- Select Year --</option>';
-        subfolderSelect.innerHTML = '<option value="">-- Select Album --</option>';
+        yearSelect.innerHTML = '<option value="">-- Any Year --</option>';
         yearSelect.disabled = true;
+        subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>';
         subfolderSelect.disabled = true;
-        
+
         if (!occasionId) return;
 
         const occasion = folderTree.children.find(o => o.id === occasionId);
         if (occasion && occasion.children) {
             occasion.children.forEach(year => {
-                const option = new Option(year.name, year.id);
+                const option = document.createElement('option');
+                option.value = year.id;
+                option.textContent = year.name;
                 yearSelect.appendChild(option);
             });
             yearSelect.disabled = false;
@@ -269,16 +287,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function populateSubfolderSelect() {
         const occasionId = occasionSelect.value;
         const yearId = yearSelect.value;
-        subfolderSelect.innerHTML = '<option value="">-- Select Album --</option>';
+        subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>';
         subfolderSelect.disabled = true;
 
         if (!yearId) return;
 
         const occasion = folderTree.children.find(o => o.id === occasionId);
-        const year = occasion?.children.find(y => y.id === yearId);
+        const year = occasion.children.find(y => y.id === yearId);
         if (year && year.children) {
             year.children.forEach(subfolder => {
-                const option = new Option(subfolder.name, subfolder.id);
+                const option = document.createElement('option');
+                option.value = subfolder.id;
+                option.textContent = subfolder.name;
                 subfolderSelect.appendChild(option);
             });
             subfolderSelect.disabled = false;
@@ -286,20 +306,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadGallery() {
-        // ** NEW LOGIC ** Determine which folder to load
-        const folderId = subfolderSelect.value || yearSelect.value || occasionSelect.value;
-        if (!folderId) return;
+        const albumId = subfolderSelect.value;
+        const yearId = yearSelect.value;
+        const occasionId = occasionSelect.value;
         
-        // ** NEW LOGIC ** Determine which API action to use
-        const action = subfolderSelect.value ? 'getFiles' : 'getFilesRecursive';
+        // Prioritize the most specific folder ID available
+        let targetFolderId = albumId || yearId || occasionId;
+        
+        if (!targetFolderId) {
+            showNotification('Info', 'Please select at least an occasion.', 'warning');
+            return;
+        }
+
+        // Use 'getFiles' for a specific album, otherwise get all files recursively
+        const action = albumId ? 'getFiles' : 'getFilesRecursive';
 
         galleryGrid.innerHTML = '';
         emptyMessage.classList.add('d-none');
         
-        const files = await apiCall(action, { folderId });
+        const files = await apiCall(action, { folderId: targetFolderId }, 'GET');
         
         if (files && files.length > 0) {
-            files.forEach(renderGalleryCard);
+            files.sort((a, b) => a.name.localeCompare(b.name));
+            files.forEach(file => renderGalleryCard(file));
         } else if (files) {
             emptyMessage.classList.remove('d-none');
         }
@@ -326,8 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
         col.innerHTML = `
             <div class="card gallery-card">
                 <button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button>
-                <div class="card-img-container">${thumbnailHtml}</div>
-                <div class="card-body"><p class="card-title" title="${file.name}">${file.name}</p></div>
+                <div class="card-img-container">
+                    ${thumbnailHtml}
+                </div>
+                <div class="card-body">
+                    <p class="card-title" title="${file.name}">${file.name}</p>
+                </div>
             </div>
         `;
         
@@ -360,6 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result && result.success) {
             elementToRemove.remove();
             showNotification('Success', result.message, 'success');
+        } else {
+            showNotification('Error', 'Failed to delete file.', 'danger');
         }
     }
 
@@ -378,28 +413,32 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('video-download').href = file.downloadUrl;
         document.getElementById('video-download').download = file.name;
         videoModal.show();
+        player.play();
     }
     
     // ===============================================================
     // UPLOAD LOGIC (UPDATED)
     // ===============================================================
     function populateUploadFolderSelect() {
-        // ** FIX **: This function is completely rewritten for better UX.
-        folderSelectUpload.innerHTML = '<option value="">-- Select Destination --</option>';
+        folderSelectUpload.innerHTML = '<option value="">-- Select Destination Album --</option>';
         if (!folderTree || !folderTree.children) return;
-
-        const addOption = (name, id, indent) => {
-            const option = new Option(`${'\u00A0\u00A0'.repeat(indent)}${name}`, id);
-            folderSelectUpload.appendChild(option);
-        };
-
+    
         folderTree.children.forEach(occasion => {
-            addOption(occasion.name, occasion.id, 0);
             occasion.children.forEach(year => {
-                addOption(year.name, year.id, 1);
-                year.children.forEach(subfolder => {
-                    addOption(subfolder.name, subfolder.id, 2);
-                });
+                // Only create a group if the year has albums (subfolders) in it
+                if (year.children && year.children.length > 0) {
+                    const group = document.createElement('optgroup');
+                    group.label = `${occasion.name} / ${year.name}`;
+                    
+                    year.children.forEach(subfolder => {
+                        const option = document.createElement('option');
+                        option.value = subfolder.id;
+                        option.textContent = subfolder.name;
+                        group.appendChild(option);
+                    });
+                    
+                    folderSelectUpload.appendChild(group);
+                }
             });
         });
     }
@@ -410,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const files = fileInput.files;
 
         if (!folderId || files.length === 0) {
-            showNotification('Warning', 'Please select a destination and files to upload.', 'warning');
+            showNotification('Warning', 'Please select a destination folder and files to upload.', 'warning');
             return;
         }
         
@@ -424,29 +463,35 @@ document.addEventListener('DOMContentLoaded', () => {
             
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${progress}%`;
-            uploadStatus.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`;
+            uploadStatus.textContent = `Uploading ${i + 1} of ${files.length}: ${file.name}`;
             
             try {
                 const fileData = await readFileAsBase64(file);
                 const result = await apiCall('uploadFile', {
-                    action: 'uploadFile', folderId, fileName: file.name,
-                    mimeType: file.type, fileData
+                    folderId: folderId,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    fileData: fileData
                 }, 'POST');
 
-                if (result && result.success) successCount++;
-                else errorCount++;
-
+                if (result && result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    console.error('Upload failed for:', file.name, result ? result.message : '');
+                }
             } catch (err) {
                 errorCount++;
+                console.error('Upload failed for:', file.name, err);
             }
         }
         
         uploadStatus.textContent = `Upload complete. ${successCount} succeeded, ${errorCount} failed.`;
-        showNotification(
-            errorCount > 0 ? 'Upload Finished' : 'Upload Complete',
-            `Finished: ${successCount} succeeded, ${errorCount} failed.`,
-            errorCount > 0 ? 'warning' : 'success'
-        );
+        if (errorCount > 0) {
+            showNotification('Upload Complete', `Finished with ${errorCount} errors.`, 'warning');
+        } else {
+            showNotification('Upload Complete', `${successCount} files uploaded successfully.`, 'success');
+        }
         
         uploadForm.reset();
         setTimeout(() => progressContainer.classList.add('d-none'), 5000);
