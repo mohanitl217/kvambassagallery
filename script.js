@@ -2,9 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // CONFIGURATION
     // ===============================================================
-    //
-    //  ✅ YOUR WEB APP URL HAS BEEN ADDED HERE
-    //
     const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
     
     // ===============================================================
@@ -105,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function apiCall(action, body = {}, method = 'GET') {
         showSpinner(true);
         try {
-            if (!API_URL || API_URL === 'YOUR_GAS_WEB_APP_URL') {
+            if (!API_URL || API_URL.includes('YOUR_GAS_WEB_APP_URL')) {
                 throw new Error("API_URL is not configured in script.js.");
             }
             let response;
@@ -152,97 +149,61 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // FOLDER & GALLERY LOGIC
     // ===============================================================
-    async function fetchFolderTree() {
-        const data = await apiCall('getFolderTree', {}, 'GET');
-        if (data && !data.error) {
-            folderTree = data;
-            populateOccasionSelect();
-            populateUploadFolderSelect();
-            populateParentFolderSelect();
-        }
-    }
-    
+    async function fetchFolderTree() { const data = await apiCall('getFolderTree', {}, 'GET'); if (data && !data.error) { folderTree = data; populateOccasionSelect(); populateUploadFolderSelect(); populateParentFolderSelect(); } }
     function populateOccasionSelect() { occasionSelect.innerHTML = '<option value="">-- Select Occasion --</option>'; if (!folderTree) return; folderTree.children.forEach(occ => occasionSelect.add(new Option(occ.name, occ.id))); }
     function populateYearSelect() { yearSelect.innerHTML = '<option value="">-- Any Year --</option>'; yearSelect.disabled = true; subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>'; subfolderSelect.disabled = true; const occId = occasionSelect.value; if (!occId) return; const occ = folderTree.children.find(o => o.id === occId); if (occ && occ.children) { occ.children.forEach(y => yearSelect.add(new Option(y.name, y.id))); yearSelect.disabled = false; } }
     function populateSubfolderSelect() { subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>'; subfolderSelect.disabled = true; const yearId = yearSelect.value; if (!yearId) return; const occ = folderTree.children.find(o => o.id === occasionSelect.value); const year = occ?.children.find(y => y.id === yearId); if (year && year.children) { year.children.forEach(sf => subfolderSelect.add(new Option(sf.name, sf.id))); subfolderSelect.disabled = false; } }
-    
-    function populateUploadFolderSelect() {
-        folderSelectUpload.innerHTML = '<option value="">-- Select Destination --</option>';
-        if (!folderTree) return;
-        folderTree.children.forEach(occasion => {
-            folderSelectUpload.add(new Option(occasion.name, occasion.id));
-            occasion.children.forEach(year => {
-                folderSelectUpload.add(new Option(`  › ${year.name}`, year.id));
-                year.children.forEach(subfolder => {
-                    folderSelectUpload.add(new Option(`    › ${subfolder.name}`, subfolder.id));
-                });
-            });
-        });
-    }
-
-    function populateParentFolderSelect() {
-        parentFolderSelect.innerHTML = '';
-        if (!folderTree) return;
-        parentFolderSelect.add(new Option('Main Gallery (for new Occasion)', folderTree.id));
-        folderTree.children.forEach(occasion => {
-            parentFolderSelect.add(new Option(occasion.name, occasion.id));
-            occasion.children.forEach(year => {
-                parentFolderSelect.add(new Option(`  › ${year.name}`, year.id));
-            });
-        });
-    }
+    function populateUploadFolderSelect() { folderSelectUpload.innerHTML = '<option value="">-- Select Destination --</option>'; if (!folderTree) return; folderTree.children.forEach(occasion => { folderSelectUpload.add(new Option(occasion.name, occasion.id)); occasion.children.forEach(year => { folderSelectUpload.add(new Option(`  › ${year.name}`, year.id)); year.children.forEach(subfolder => { folderSelectUpload.add(new Option(`    › ${subfolder.name}`, subfolder.id)); }); }); }); }
+    function populateParentFolderSelect() { parentFolderSelect.innerHTML = ''; if (!folderTree) return; parentFolderSelect.add(new Option('Main Gallery (for new Occasion)', folderTree.id)); folderTree.children.forEach(occasion => { parentFolderSelect.add(new Option(occasion.name, occasion.id)); occasion.children.forEach(year => { parentFolderSelect.add(new Option(`  › ${year.name}`, year.id)); }); }); }
 
     async function loadGallery() { let targetFolderId = subfolderSelect.value || yearSelect.value || occasionSelect.value; if (!targetFolderId) { showNotification('Info', 'Please select at least an occasion.', 'warning'); return; } const action = subfolderSelect.value ? 'getFiles' : 'getFilesRecursive'; galleryGrid.innerHTML = ''; emptyMessage.classList.add('d-none'); const files = await apiCall(action, { folderId: targetFolderId }, 'GET'); if (files && files.length > 0) { files.sort((a, b) => a.name.localeCompare(b.name)); files.forEach(file => renderGalleryCard(file)); } else if (files) { emptyMessage.classList.remove('d-none'); } updateAdminUI(!!sessionStorage.getItem('adminToken')); }
-    function renderGalleryCard(file) { const col = document.createElement('div'); col.className = 'col-lg-3 col-md-4 col-sm-6'; col.dataset.fileName = file.name.toLowerCase(); const isImage = file.mimeType.startsWith('image/'), isVideo = file.mimeType.startsWith('video/'); let thumb = isImage ? `<img src="${file.downloadUrl}" class="card-img-top" alt="${file.name}" loading="lazy">` : isVideo ? `<div class="file-icon"><i class="bi bi-film"></i></div>` : `<div class="file-icon"><i class="bi bi-file-earmark-text"></i></div>`; col.innerHTML = `<div class="card gallery-card"><button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button><div class="card-img-container">${thumb}</div><div class="card-body"><p class="card-title" title="${file.name}">${file.name}</p></div></div>`; col.querySelector('.gallery-card').addEventListener('click', e => { if (e.target.closest('.delete-btn')) return; if (isImage) openLightbox(file); else if (isVideo) openVideoPlayer(file); else window.open(file.downloadUrl, '_blank'); }); col.querySelector('.delete-btn').addEventListener('click', e => { e.stopPropagation(); if (confirm(`Delete "${file.name}"?`)) deleteFile(file.id, col); }); galleryGrid.appendChild(col); }
+    
+    function renderGalleryCard(file) {
+        const col = document.createElement('div');
+        col.className = 'col-lg-3 col-md-4 col-sm-6';
+        col.dataset.fileName = file.name.toLowerCase();
+
+        const isImage = file.mimeType.startsWith('image/');
+        const isVideo = file.mimeType.startsWith('video/');
+        
+        // **FIX**: Use thumbnailUrl if available for images, otherwise show an icon.
+        let thumb = '';
+        if (isImage && file.thumbnailUrl) {
+            thumb = `<img src="${file.thumbnailUrl}" class="card-img-top" alt="${file.name}" loading="lazy">`;
+        } else if (isVideo) {
+            thumb = `<div class="file-icon"><i class="bi bi-film"></i></div>`;
+        } else {
+            thumb = `<div class="file-icon"><i class="bi bi-file-earmark-text"></i></div>`;
+        }
+
+        col.innerHTML = `<div class="card gallery-card"><button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button><div class="card-img-container">${thumb}</div><div class="card-body"><p class="card-title" title="${file.name}">${file.name}</p></div></div>`;
+        
+        col.querySelector('.gallery-card').addEventListener('click', e => {
+            if (e.target.closest('.delete-btn')) return;
+            if (isImage) openLightbox(file);
+            else if (isVideo) openVideoPlayer(file);
+            else window.open(file.downloadUrl, '_blank');
+        });
+        
+        col.querySelector('.delete-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            if (confirm(`Delete "${file.name}"?`)) deleteFile(file.id, col);
+        });
+        
+        galleryGrid.appendChild(col);
+    }
+
     function filterGallery() { const searchTerm = searchInput.value.toLowerCase(); galleryGrid.querySelectorAll('.col-lg-3').forEach(card => card.style.display = card.dataset.fileName.includes(searchTerm) ? '' : 'none'); }
     async function deleteFile(fileId, element) { const result = await apiCall('deleteFile', { id: fileId }, 'POST'); if (result?.success) { element.remove(); showNotification('Success', result.message, 'success'); } else { showNotification('Error', 'Failed to delete file.', 'danger'); } }
-    function openLightbox(file) { document.getElementById('lightbox-title').textContent = file.name; document.getElementById('lightbox-img').src = file.downloadUrl; document.getElementById('lightbox-download').href = file.downloadUrl; document.getElementById('lightbox-download').download = file.name; lightboxModal.show(); }
-    function openVideoPlayer(file) { document.getElementById('video-title').textContent = file.name; const player = document.getElementById('video-player'); player.src = file.downloadUrl; document.getElementById('video-download').href = file.downloadUrl; document.getElementById('video-download').download = file.name; videoModal.show(); player.play(); }
+    
+    // **FIX**: Use the correct `viewUrl` for full-size images and videos.
+    function openLightbox(file) { document.getElementById('lightbox-title').textContent = file.name; document.getElementById('lightbox-img').src = file.viewUrl; document.getElementById('lightbox-download').href = file.downloadUrl; document.getElementById('lightbox-download').download = file.name; lightboxModal.show(); }
+    function openVideoPlayer(file) { document.getElementById('video-title').textContent = file.name; const player = document.getElementById('video-player'); player.src = file.viewUrl; document.getElementById('video-download').href = file.downloadUrl; document.getElementById('video-download').download = file.name; videoModal.show(); player.play(); }
     
     // ===============================================================
     // UPLOAD & MANAGE LOGIC
     // ===============================================================
-    async function handleCreateFolder(e) {
-        e.preventDefault();
-        const newFolderNameInput = document.getElementById('new-folder-name');
-        const parentFolderId = parentFolderSelect.value;
-        const folderName = newFolderNameInput.value.trim();
-
-        if (!folderName) {
-            showNotification('Warning', 'Folder name cannot be empty.', 'warning');
-            return;
-        }
-
-        const result = await apiCall('createFolder', { parentFolderId, folderName }, 'POST');
-        if (result && result.success) {
-            showNotification('Success', `Folder "${result.folderName}" created successfully.`);
-            newFolderNameInput.value = ''; // Clear the input
-            await fetchFolderTree(); // Refresh all folder dropdowns
-        }
-    }
-
-    async function handleUpload(e) {
-        e.preventDefault();
-        const folderId = folderSelectUpload.value, files = fileInput.files;
-        if (!folderId || files.length === 0) { showNotification('Warning', 'Please select a destination and files.', 'warning'); return; }
-        progressContainer.classList.remove('d-none');
-        let successCount = 0, errorCount = 0;
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const progress = Math.round(((i + 1) / files.length) * 100);
-            progressBar.style.width = `${progress}%`; progressBar.textContent = `${progress}%`;
-            uploadStatus.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`;
-            try {
-                const fileData = await readFileAsBase64(file);
-                const result = await apiCall('uploadFile', { folderId, fileName: file.name, mimeType: file.type, fileData }, 'POST');
-                if (result?.success) successCount++; else errorCount++;
-            } catch (err) { errorCount++; }
-        }
-        uploadStatus.textContent = `Upload complete. ${successCount} succeeded, ${errorCount} failed.`;
-        showNotification('Upload Complete', errorCount > 0 ? `Finished with ${errorCount} errors.` : `${successCount} files uploaded successfully.`, errorCount > 0 ? 'warning' : 'success');
-        uploadForm.reset();
-        setTimeout(() => progressContainer.classList.add('d-none'), 5000);
-    }
-    
+    async function handleCreateFolder(e) { e.preventDefault(); const newFolderNameInput = document.getElementById('new-folder-name'); const parentFolderId = parentFolderSelect.value; const folderName = newFolderNameInput.value.trim(); if (!folderName) { showNotification('Warning', 'Folder name cannot be empty.', 'warning'); return; } const result = await apiCall('createFolder', { parentFolderId, folderName }, 'POST'); if (result && result.success) { showNotification('Success', `Folder "${result.folderName}" created successfully.`); newFolderNameInput.value = ''; await fetchFolderTree(); } }
+    async function handleUpload(e) { e.preventDefault(); const folderId = folderSelectUpload.value, files = fileInput.files; if (!folderId || files.length === 0) { showNotification('Warning', 'Please select a destination and files.', 'warning'); return; } progressContainer.classList.remove('d-none'); let successCount = 0, errorCount = 0; for (let i = 0; i < files.length; i++) { const file = files[i]; const progress = Math.round(((i + 1) / files.length) * 100); progressBar.style.width = `${progress}%`; progressBar.textContent = `${progress}%`; uploadStatus.textContent = `Uploading ${i + 1}/${files.length}: ${file.name}`; try { const fileData = await readFileAsBase64(file); const result = await apiCall('uploadFile', { folderId, fileName: file.name, mimeType: file.type, fileData }, 'POST'); if (result?.success) successCount++; else errorCount++; } catch (err) { errorCount++; } } uploadStatus.textContent = `Upload complete. ${successCount} succeeded, ${errorCount} failed.`; showNotification('Upload Complete', errorCount > 0 ? `Finished with ${errorCount} errors.` : `${successCount} files uploaded successfully.`, errorCount > 0 ? 'warning' : 'success'); uploadForm.reset(); setTimeout(() => progressContainer.classList.add('d-none'), 5000); }
     function readFileAsBase64(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = (error) => reject(error); reader.readAsDataURL(file); }); }
 });
