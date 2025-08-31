@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kendriya Vidyalaya Ambassa Gallery</title>
+    <title>Modern School Gallery</title>
     
     <!-- Preconnect for better performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,12 +19,12 @@
     <link rel="stylesheet" href="style.css">
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Kendriya Vidyalaya Ambassa Gallery - Discover and relive the memorable moments that define our vibrant school community">
-    <meta name="keywords" content="school, gallery, photos, videos, memories, events, Kendriya Vidyalaya, Ambassa">
-    <meta name="author" content="Kendriya Vidyalaya Ambassa">
+    <meta name="description" content="Modern School Gallery - Discover and relive the memorable moments that define our vibrant school community">
+    <meta name="keywords" content="school, gallery, photos, videos, memories, events">
+    <meta name="author" content="School Gallery">
     
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Kendriya Vidyalaya Ambassa Gallery">
+    <meta property="og:title" content="Modern School Gallery">
     <meta property="og:description" content="Discover and relive the memorable moments that define our vibrant school community">
     <meta property="og:type" content="website">
     
@@ -36,11 +36,8 @@
     <nav class="navbar" role="navigation" aria-label="Main navigation">
         <div class="container">
             <div class="navbar-brand">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/b/ba/KVS_SVG_logo.svg/1200px-KVS_SVG_logo.svg.png" alt="KVS Logo" class="school-logo">
-                <div class="brand-text">
-                    <span class="brand-title">Kendriya Vidyalaya</span>
-                    <span class="brand-subtitle">Ambassa</span>
-                </div>
+                <i data-lucide="camera" aria-hidden="true"></i>
+                <span>School Gallery</span>
             </div>
             
             <div class="navbar-menu">
@@ -85,36 +82,21 @@
         <section id="home" class="section active" role="main">
             <div class="hero">
                 <div class="hero-content">
-                    <h1 class="hero-title">Welcome to KV Ambassa Gallery</h1>
-                    <p class="hero-subtitle">Discover and relive the memorable moments that define our vibrant school community. From academic achievements to sporting triumphs, every memory tells our story of excellence.</p>
+                    <h1 class="hero-title">Welcome to Our School Gallery</h1>
+                    <p class="hero-subtitle">Discover and relive the memorable moments that define our vibrant school community. From academic achievements to sporting triumphs, every memory tells our story.</p>
                     
                     <!-- Stats Preview -->
                     <div class="stats-preview" id="stats-preview">
                         <div class="stat-item">
-                            <div class="stat-icon">
-                                <i data-lucide="image" aria-hidden="true"></i>
-                            </div>
-                            <div class="stat-value" id="total-photos">
-                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-                            </div>
+                            <div class="stat-value" id="total-photos">-</div>
                             <div class="stat-label">Photos</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-icon">
-                                <i data-lucide="video" aria-hidden="true"></i>
-                            </div>
-                            <div class="stat-value" id="total-videos">
-                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-                            </div>
+                            <div class="stat-value" id="total-videos">-</div>
                             <div class="stat-label">Videos</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-icon">
-                                <i data-lucide="hard-drive" aria-hidden="true"></i>
-                            </div>
-                            <div class="stat-value" id="total-size">
-                                <div class="loading-bar"><div class="loading-bar-fill"></div></div>
-                            </div>
+                            <div class="stat-value" id="total-size">-</div>
                             <div class="stat-label">Total Size</div>
                         </div>
                     </div>
@@ -172,13 +154,6 @@
                                 <span>View</span>
                             </button>
                         </div>
-                        
-                        <div class="filter-group">
-                            <button id="refresh-cache-btn" class="btn btn-ghost" title="Refresh data">
-                                <i data-lucide="refresh-cw" aria-hidden="true"></i>
-                                <span>Refresh</span>
-                            </button>
-                        </div>
                     </div>
                     
                     <div class="search-row">
@@ -204,17 +179,14 @@
                     </div>
                 </div>
 
-                <!-- Progress Bar -->
-                <div id="gallery-progress" class="progress-container hidden">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="gallery-progress-fill"></div>
-                        <span class="progress-percentage" id="gallery-progress-percentage">0%</span>
-                    </div>
-                    <div class="progress-text" id="gallery-progress-text">Loading gallery...</div>
-                </div>
-
                 <!-- Gallery Grid -->
                 <div id="gallery-grid" class="gallery-grid" role="region" aria-label="Photo gallery"></div>
+                
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="loading-spinner hidden" role="status" aria-live="polite">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <p>Loading amazing memories...</p>
+                </div>
                 
                 <!-- Empty State -->
                 <div id="empty-message" class="empty-state hidden" role="status">
@@ -226,97 +198,90 @@
         </section>
 
         <!-- Upload Section -->
-        <section id="upload" class="section admin-only hidden" role="main">
+        <section id="upload" class="section" role="main">
             <div class="container">
                 <h2 class="section-title">Upload & Manage</h2>
                 
-                <div class="upload-layout">
-                    <!-- Upload Card -->
-                    <div class="upload-card main-upload">
+                <div class="upload-grid">
+                    <!-- File Upload Card -->
+                    <div class="upload-card">
                         <div class="card-header">
-                            <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                            <i data-lucide="upload" aria-hidden="true"></i>
                             <h3>Upload Media</h3>
                         </div>
                         
-                        <form id="upload-form" class="upload-form">
+                        <form id="upload-form" class="upload-form" novalidate>
                             <div class="form-group">
-                                <label for="folder-select-upload">Upload to Folder</label>
-                                <select id="folder-select-upload" class="select-input" required>
-                                    <option value="">Select Folder</option>
+                                <label for="folder-select-upload">Destination Folder *</label>
+                                <select id="folder-select-upload" class="select-input" required aria-describedby="folder-help">
+                                    <option value="">Select Destination</option>
                                 </select>
+                                <div id="folder-help" class="form-help">Choose where to upload your files</div>
                             </div>
                             
-                            <div class="file-drop-zone" id="file-drop-zone">
-                                <i data-lucide="upload" aria-hidden="true"></i>
-                                <p>Drag and drop files here or <button type="button" class="upload-trigger">browse files</button></p>
-                                <p class="upload-hint">Supports: JPG, PNG, MP4, MOV (Max 50MB per file)</p>
-                                <input type="file" id="file-input" multiple accept="image/*,video/*" hidden>
-                            </div>
-                            
-                            <div id="file-preview-container" class="file-preview-container hidden">
-                                <div class="preview-header">
-                                    <h4>Selected Files</h4>
-                                    <button type="button" id="clear-files" class="btn btn-ghost btn-small">Clear All</button>
+                            <div class="form-group">
+                                <label for="file-input">Choose Files *</label>
+                                <div class="file-drop-zone" id="file-drop-zone" tabindex="0" role="button" aria-describedby="file-help">
+                                    <input type="file" id="file-input" multiple accept="image/*,video/*" required aria-describedby="file-help">
+                                    <div class="drop-zone-content">
+                                        <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                                        <p>Drop files here or click to browse</p>
+                                        <span>Supports images and videos (Max 10MB each)</span>
+                                    </div>
                                 </div>
-                                <div id="file-preview-list" class="file-preview-list"></div>
+                                <div id="file-help" class="form-help">Upload images (JPG, PNG, GIF) and videos (MP4, MOV, AVI)</div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary btn-large" disabled>
+                            <button type="submit" class="btn btn-success btn-full">
                                 <i data-lucide="upload" aria-hidden="true"></i>
-                                <span>Upload Files</span>
+                                <span>Start Upload</span>
                             </button>
                         </form>
+                        
+                        <!-- Upload Progress -->
+                        <div id="upload-progress-container" class="progress-container hidden" role="status" aria-live="polite">
+                            <div class="progress-bar">
+                                <div id="upload-progress-bar" class="progress-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p id="upload-status" class="progress-status">Preparing upload...</p>
+                        </div>
                     </div>
-                    
-                    <!-- Create Folder Card -->
+
+                    <!-- Folder Management Card -->
                     <div class="upload-card">
                         <div class="card-header">
                             <i data-lucide="folder-plus" aria-hidden="true"></i>
                             <h3>Create Folder</h3>
                         </div>
                         
-                        <form id="create-folder-form" class="create-folder-form">
+                        <form id="create-folder-form" class="upload-form" novalidate>
                             <div class="form-group">
-                                <label for="parent-folder-select">Parent Folder</label>
+                                <label for="parent-folder-select">Parent Folder *</label>
                                 <select id="parent-folder-select" class="select-input" required>
-                                    <option value="">Root Directory</option>
+                                    <option value="">Select Parent Folder</option>
                                 </select>
                             </div>
                             
                             <div class="form-group">
-                                <label for="new-folder-name">Folder Name</label>
-                                <input type="text" id="new-folder-name" class="text-input" placeholder="e.g., Annual Day 2024" required>
+                                <label for="new-folder-name">Folder Name *</label>
+                                <input 
+                                    type="text" 
+                                    id="new-folder-name" 
+                                    class="text-input" 
+                                    placeholder="Enter folder name"
+                                    required
+                                    maxlength="100"
+                                    pattern="[^/\\:*?&quot;&lt;&gt;|]+"
+                                    title="Folder name cannot contain: / \ : * ? &quot; < > |"
+                                >
                             </div>
                             
-                            <button type="submit" class="btn btn-secondary">
+                            <button type="submit" class="btn btn-primary btn-full">
                                 <i data-lucide="folder-plus" aria-hidden="true"></i>
                                 <span>Create Folder</span>
                             </button>
                         </form>
                     </div>
-                </div>
-                
-                <!-- Upload Progress Panel -->
-                <div id="upload-progress-panel" class="upload-progress-panel hidden">
-                    <div class="progress-header">
-                        <h3>Upload Progress</h3>
-                        <button id="cancel-upload" class="btn btn-ghost btn-small">Cancel</button>
-                    </div>
-                    
-                    <div id="overall-progress" class="overall-progress"></div>
-                    
-                    <div id="file-progress-list" class="file-progress-list"></div>
-                </div>
-                
-                <!-- Recent Uploads -->
-                <div class="recent-uploads-card">
-                    <div class="card-header">
-                        <h3>Recent Uploads</h3>
-                        <button id="refresh-recent" class="btn btn-ghost btn-small">
-                            <i data-lucide="refresh-cw" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                    <div id="recent-uploads-grid" class="recent-uploads-grid"></div>
                 </div>
             </div>
         </section>
@@ -327,44 +292,73 @@
                 <h2 class="section-title">About Our Gallery</h2>
                 
                 <div class="about-content">
-                    <div class="about-text">
-                        <h3>Preserving Memories, Celebrating Excellence</h3>
-                        <p>Welcome to the Kendriya Vidyalaya Ambassa Gallery, where every photograph tells a story of achievement, growth, and community spirit. Our digital archive captures the vibrant life of our school, from academic milestones to cultural celebrations, sporting victories to artistic expressions.</p>
-                        
-                        <h4>Features</h4>
-                        <ul>
-                            <li><strong>Organized Collections:</strong> Photos and videos categorized by events, years, and occasions for easy browsing</li>
-                            <li><strong>High-Quality Media:</strong> Crystal clear images and videos that preserve every precious moment</li>
-                            <li><strong>Search & Filter:</strong> Powerful tools to find specific memories quickly</li>
-                            <li><strong>Responsive Design:</strong> Seamless experience across all devices</li>
-                            <li><strong>Secure Access:</strong> Protected upload system for authorized personnel</li>
-                        </ul>
-                        
-                        <h4>Our Mission</h4>
-                        <p>To create a comprehensive visual history of our school's journey, celebrating the achievements of our students, the dedication of our teachers, and the spirit of our community. Every image in this gallery represents a moment of pride, learning, and growth.</p>
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i data-lucide="camera" aria-hidden="true"></i>
+                        </div>
+                        <h3>Capture Memories</h3>
+                        <p>Our gallery preserves the precious moments that make our school community special. From daily activities to special events, every photo tells a story.</p>
                     </div>
                     
-                    <div class="about-stats">
-                        <div class="stat-card">
+                    <div class="about-card">
+                        <div class="about-icon">
                             <i data-lucide="users" aria-hidden="true"></i>
-                            <div class="stat-info">
-                                <div class="stat-number">500+</div>
-                                <div class="stat-description">Students Featured</div>
-                            </div>
                         </div>
-                        <div class="stat-card">
-                            <i data-lucide="calendar" aria-hidden="true"></i>
-                            <div class="stat-info">
-                                <div class="stat-number">50+</div>
-                                <div class="stat-description">Events Documented</div>
-                            </div>
+                        <h3>Community Driven</h3>
+                        <p>Built by our community, for our community. Teachers, students, and staff all contribute to creating this visual history of our school.</p>
+                    </div>
+                    
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i data-lucide="shield-check" aria-hidden="true"></i>
                         </div>
-                        <div class="stat-card">
-                            <i data-lucide="award" aria-hidden="true"></i>
-                            <div class="stat-info">
-                                <div class="stat-number">100+</div>
-                                <div class="stat-description">Achievements Celebrated</div>
-                            </div>
+                        <h3>Safe & Secure</h3>
+                        <p>All photos are securely stored and managed with privacy in mind. We ensure that memories are preserved safely for future generations.</p>
+                    </div>
+                    
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i data-lucide="smartphone" aria-hidden="true"></i>
+                        </div>
+                        <h3>Modern Experience</h3>
+                        <p>Enjoy a modern, responsive interface that works beautifully on all devices. Browse, search, and share memories effortlessly.</p>
+                    </div>
+                </div>
+                
+                <div class="about-features">
+                    <h3>Gallery Features</h3>
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <i data-lucide="search" aria-hidden="true"></i>
+                            <span>Advanced Search & Filtering</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="image" aria-hidden="true"></i>
+                            <span>High-Quality Image Viewing</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="folder" aria-hidden="true"></i>
+                            <span>Organized by Events & Years</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="download" aria-hidden="true"></i>
+                            <span>Easy Download & Sharing</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="moon" aria-hidden="true"></i>
+                            <span>Dark/Light Theme Support</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="zap" aria-hidden="true"></i>
+                            <span>Fast & Responsive Design</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="keyboard" aria-hidden="true"></i>
+                            <span>Keyboard Shortcuts Support</span>
+                        </div>
+                        <div class="feature-item">
+                            <i data-lucide="maximize" aria-hidden="true"></i>
+                            <span>Fullscreen & Zoom Viewing</span>
                         </div>
                     </div>
                 </div>
@@ -373,26 +367,30 @@
     </main>
 
     <!-- Login Modal -->
-    <div id="login-modal" class="modal hidden">
-        <div class="modal-backdrop"></div>
+    <div id="login-modal" class="modal hidden" role="dialog" aria-labelledby="login-title" aria-modal="true">
+        <div class="modal-backdrop" aria-hidden="true"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Admin Login</h3>
+                <h3 id="login-title">Admin Login</h3>
                 <button id="login-modal-close" class="modal-close" aria-label="Close login modal">
                     <i data-lucide="x" aria-hidden="true"></i>
                 </button>
             </div>
-            <form id="login-form" class="login-form">
-                <div id="login-error" class="error-message hidden"></div>
+            
+            <form id="login-form" class="login-form" novalidate>
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" class="text-input" required>
+                    <input type="text" id="username" class="text-input" required autocomplete="username">
                 </div>
+                
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" class="text-input" required>
+                    <input type="password" id="password" class="text-input" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-primary btn-large">
+                
+                <div id="login-error" class="error-message hidden" role="alert"></div>
+                
+                <button type="submit" class="btn btn-primary btn-full">
                     <i data-lucide="log-in" aria-hidden="true"></i>
                     <span>Login</span>
                 </button>
@@ -401,77 +399,83 @@
     </div>
 
     <!-- Lightbox Modal -->
-    <div id="lightbox-modal" class="lightbox-modal hidden">
-        <div class="lightbox-backdrop"></div>
+    <div id="lightbox-modal" class="lightbox hidden" role="dialog" aria-labelledby="lightbox-title" aria-modal="true">
+        <div class="lightbox-backdrop" aria-hidden="true"></div>
         <div class="lightbox-content">
             <div class="lightbox-header">
-                <div class="lightbox-info">
-                    <h3 id="lightbox-title"></h3>
-                    <p id="lightbox-filename"></p>
-                </div>
+                <h3 id="lightbox-title" class="lightbox-title">Photo Viewer</h3>
                 <div class="lightbox-controls">
-                    <button id="lightbox-zoom-out" class="lightbox-btn" title="Zoom Out">
+                    <button id="lightbox-zoom-out" class="lightbox-btn" aria-label="Zoom out" title="Zoom Out">
                         <i data-lucide="zoom-out" aria-hidden="true"></i>
                     </button>
-                    <button id="lightbox-zoom-in" class="lightbox-btn" title="Zoom In">
+                    <button id="lightbox-zoom-reset" class="lightbox-btn" aria-label="Reset zoom" title="Reset Zoom">
+                        <i data-lucide="move" aria-hidden="true"></i>
+                    </button>
+                    <button id="lightbox-zoom-in" class="lightbox-btn" aria-label="Zoom in" title="Zoom In">
                         <i data-lucide="zoom-in" aria-hidden="true"></i>
                     </button>
-                    <button id="lightbox-fullscreen" class="lightbox-btn" title="Fullscreen">
+                    <button id="lightbox-fullscreen" class="lightbox-btn" aria-label="Toggle fullscreen" title="Fullscreen">
                         <i data-lucide="maximize" aria-hidden="true"></i>
                     </button>
-                    <button id="lightbox-download" class="lightbox-btn" title="Download">
+                    <button id="lightbox-download" class="lightbox-btn" aria-label="Download image" title="Download">
                         <i data-lucide="download" aria-hidden="true"></i>
                     </button>
-                    <button id="lightbox-close" class="lightbox-btn" title="Close">
+                    <button id="lightbox-close" class="lightbox-btn" aria-label="Close lightbox" title="Close">
                         <i data-lucide="x" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
             
-            <div class="lightbox-media">
-                <img id="lightbox-image" class="lightbox-image hidden" alt="Gallery image">
-                <video id="lightbox-video" class="lightbox-video hidden" controls preload="metadata"></video>
+            <div class="lightbox-media-container">
+                <img id="lightbox-image" class="lightbox-media" alt="" loading="lazy">
+                <video id="lightbox-video" class="lightbox-media hidden" controls preload="metadata"></video>
+                
+                <button id="lightbox-prev" class="lightbox-nav lightbox-nav-prev" aria-label="Previous image">
+                    <i data-lucide="chevron-left" aria-hidden="true"></i>
+                </button>
+                <button id="lightbox-next" class="lightbox-nav lightbox-nav-next" aria-label="Next image">
+                    <i data-lucide="chevron-right" aria-hidden="true"></i>
+                </button>
             </div>
             
             <div class="lightbox-footer">
-                <button id="lightbox-prev" class="lightbox-nav-btn">
-                    <i data-lucide="chevron-left" aria-hidden="true"></i>
-                    <span>Previous</span>
-                </button>
+                <div class="lightbox-info">
+                    <div id="lightbox-filename" class="lightbox-filename"></div>
+                    <div id="lightbox-details" class="lightbox-details"></div>
+                </div>
                 <div id="lightbox-counter" class="lightbox-counter"></div>
-                <button id="lightbox-next" class="lightbox-nav-btn">
-                    <span>Next</span>
-                    <i data-lucide="chevron-right" aria-hidden="true"></i>
-                </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="notification-toast" class="toast hidden">
+    <!-- Notification Toast -->
+    <div id="notification-toast" class="toast hidden" role="alert" aria-live="assertive">
         <div class="toast-content">
-            <div class="toast-icon" id="toast-icon"></div>
+            <div id="toast-icon" class="toast-icon" aria-hidden="true"></div>
             <div class="toast-text">
-                <div class="toast-title" id="toast-title"></div>
-                <div class="toast-message" id="toast-message"></div>
+                <div id="toast-title" class="toast-title"></div>
+                <div id="toast-message" class="toast-message"></div>
             </div>
-            <button id="toast-close" class="toast-close">
+            <button id="toast-close" class="toast-close" aria-label="Close notification">
                 <i data-lucide="x" aria-hidden="true"></i>
             </button>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="cache-manager.js"></script>
-    <script src="progress-bar.js"></script>
-    <script src="mock-api.js"></script>
+    <!-- Loading Overlay -->
+    <div id="global-loading" class="global-loading hidden" role="status" aria-live="polite">
+        <div class="global-spinner" aria-hidden="true"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- JavaScript -->
     <script src="script.js"></script>
     
     <!-- Initialize Lucide Icons -->
     <script>
-        if (typeof lucide !== 'undefined') {
+        document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
-        }
+        });
     </script>
 </body>
 </html>
