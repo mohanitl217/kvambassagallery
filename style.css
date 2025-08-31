@@ -889,16 +889,66 @@ body {
 .media-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 100%);
   opacity: 0;
   transition: var(--transition);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: space-between;
   padding: var(--space-4);
 }
 
 .gallery-card:hover .media-overlay {
   opacity: 1;
+}
+
+.media-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.media-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
+}
+
+.media-action-btn:hover {
+  background: white;
+  color: var(--primary-600);
+  transform: scale(1.1);
+}
+
+.media-action-btn.delete-action:hover {
+  background: var(--error-500);
+  color: white;
+}
+
+.media-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: white;
+  font-size: var(--text-sm);
+}
+
+.file-size {
+  font-weight: var(--font-medium);
+}
+
+.file-type {
+  opacity: 0.8;
+  font-size: var(--text-xs);
 }
 
 .media-info {
@@ -1398,7 +1448,7 @@ body {
 }
 
 /* ===============================================================
-   Enhanced Lightbox
+   Enhanced Lightbox with Zoom and Fullscreen
    =============================================================== */
 
 .lightbox {
@@ -1451,6 +1501,11 @@ body {
 }
 
 .lightbox-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   padding: var(--space-3);
   border: none;
   background: rgba(255, 255, 255, 0.1);
@@ -1459,11 +1514,28 @@ body {
   cursor: pointer;
   transition: var(--transition);
   backdrop-filter: blur(8px);
+  position: relative;
 }
 
 .lightbox-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
+}
+
+.lightbox-btn:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gray-900);
+  color: white;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .lightbox-media-container {
