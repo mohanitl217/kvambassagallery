@@ -16,6 +16,9 @@ class ModernSchoolGallery {
         this.sessionToken = sessionStorage.getItem('adminToken');
         this.currentView = 'grid';
         this.uploadQueue = [];
+        this.recentUploads = JSON.parse(localStorage.getItem('recentUploads') || '[]');
+        this.uploadInProgress = false;
+        this.currentUploadController = null;
         
         // UI elements cache
         this.elements = {};
@@ -36,6 +39,7 @@ class ModernSchoolGallery {
             
             await this.fetchFolderTree();
             await this.updateStats();
+            this.renderRecentUploads();
             
             // Handle initial navigation
             const initialSection = window.location.hash.slice(1) || 'home';
@@ -87,10 +91,25 @@ class ModernSchoolGallery {
         this.elements.parentFolderSelect = document.getElementById('parent-folder-select');
         this.elements.fileInput = document.getElementById('file-input');
         this.elements.fileDropZone = document.getElementById('file-drop-zone');
-        this.elements.uploadProgressContainer = document.getElementById('upload-progress-container');
-        this.elements.uploadProgressBar = document.getElementById('upload-progress-bar');
-        this.elements.uploadStatus = document.getElementById('upload-status');
         this.elements.newFolderName = document.getElementById('new-folder-name');
+        
+        // File preview
+        this.elements.filePreviewContainer = document.getElementById('file-preview-container');
+        this.elements.filePreviewList = document.getElementById('file-preview-list');
+        this.elements.clearFilesBtn = document.getElementById('clear-files');
+        
+        // Upload progress
+        this.elements.uploadProgressPanel = document.getElementById('upload-progress-panel');
+        this.elements.overallProgressBar = document.getElementById('overall-progress-bar');
+        this.elements.overallPercentage = document.getElementById('overall-percentage');
+        this.elements.uploadStats = document.getElementById('upload-stats');
+        this.elements.uploadSpeed = document.getElementById('upload-speed');
+        this.elements.fileProgressList = document.getElementById('file-progress-list');
+        this.elements.cancelUpload = document.getElementById('cancel-upload');
+        
+        // Recent uploads
+        this.elements.recentUploadsGrid = document.getElementById('recent-uploads-grid');
+        this.elements.refreshRecent = document.getElementById('refresh-recent');
         
         // Lightbox
         this.elements.lightboxModal = document.getElementById('lightbox-modal');
@@ -104,6 +123,9 @@ class ModernSchoolGallery {
         this.elements.lightboxPrev = document.getElementById('lightbox-prev');
         this.elements.lightboxNext = document.getElementById('lightbox-next');
         this.elements.lightboxDownload = document.getElementById('lightbox-download');
+        this.elements.lightboxZoomIn = document.getElementById('lightbox-zoom-in');
+        this.elements.lightboxZoomOut = document.getElementById('lightbox-zoom-out');
+        this.elements.lightboxFullscreen = document.getElementById('lightbox-fullscreen');
         this.elements.lightboxBackdrop = document.querySelector('.lightbox-backdrop');
         
         // Theme toggle
@@ -122,9 +144,6 @@ class ModernSchoolGallery {
         this.elements.totalPhotos = document.getElementById('total-photos');
         this.elements.totalVideos = document.getElementById('total-videos');
         this.elements.totalSize = document.getElementById('total-size');
-        
-        // Global loading
-        this.elements.globalLoading = document.getElementById('global-loading');
         
         // Admin-only elements
         this.elements.adminOnly = document.querySelectorAll('.admin-only');
@@ -187,6 +206,15 @@ class ModernSchoolGallery {
         if (this.elements.createFolderForm) {
             this.elements.createFolderForm.addEventListener('submit', (e) => this.handleCreateFolder(e));
         }
+        if (this.elements.clearFilesBtn) {
+            this.elements.clearFilesBtn.addEventListener('click', () => this.clearFileSelection());
+        }
+        if (this.elements.cancelUpload) {
+            this.elements.cancelUpload.addEventListener('click', () => this.cancelUpload());
+        }
+        if (this.elements.refreshRecent) {
+            this.elements.refreshRecent.addEventListener('click', () => this.renderRecentUploads());
+        }
         
         this.setupFileDropZone();
 
@@ -203,14 +231,15 @@ class ModernSchoolGallery {
         if (this.elements.lightboxDownload) {
             this.elements.lightboxDownload.addEventListener('click', () => this.downloadCurrentImage());
         }
-        
-        // Add fullscreen toggle
-        document.getElementById('lightbox-fullscreen')?.addEventListener('click', () => this.toggleFullscreen());
-        
-        // Add zoom functionality
-        document.getElementById('lightbox-zoom-in')?.addEventListener('click', () => this.zoomImage(1.2));
-        document.getElementById('lightbox-zoom-out')?.addEventListener('click', () => this.zoomImage(0.8));
-        document.getElementById('lightbox-zoom-reset')?.addEventListener('click', () => this.resetZoom());
+        if (this.elements.lightboxZoomIn) {
+            this.elements.lightboxZoomIn.addEventListener('click', () => this.zoomImage(1.2));
+        }
+        if (this.elements.lightboxZoomOut) {
+            this.elements.lightboxZoomOut.addEventListener('click', () => this.zoomImage(0.8));
+        }
+        if (this.elements.lightboxFullscreen) {
+            this.elements.lightboxFullscreen.addEventListener('click', () => this.toggleFullscreen());
+        }
         if (this.elements.lightboxBackdrop) {
             this.elements.lightboxBackdrop.addEventListener('click', () => this.hideLightbox());
         }
@@ -305,13 +334,42 @@ class ModernSchoolGallery {
         });
 
         if (validFiles.length > 0) {
-            this.updateFileDropZone(validFiles);
+            this.updateFilePreview(validFiles);
         }
     }
 
-    updateFileDropZone(files) {
-        if (!files || files.length === 0) return;
+    updateFilePreview(files) {
+        if (!this.elements.filePreviewContainer || !this.elements.filePreviewList) return;
 
+        this.elements.filePreviewContainer.classList.remove('hidden');
+        
+        const previewHTML = files.map((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const fileSize = this.formatFileSize(file.size);
+            
+            return `
+                <div class="file-preview-item" data-index="${index}">
+                    ${isImage ? `
+                        <img class="file-preview-thumb" src="${URL.createObjectURL(file)}" alt="${file.name}">
+                    ` : `
+                        <div class="file-preview-thumb placeholder">
+                            <i data-lucide="video"></i>
+                        </div>
+                    `}
+                    <div class="file-preview-info">
+                        <div class="file-preview-name">${file.name}</div>
+                        <div class="file-preview-size">${fileSize}</div>
+                    </div>
+                    <button class="action-btn" onclick="gallery.removeFileFromPreview(${index})" aria-label="Remove file">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        this.elements.filePreviewList.innerHTML = previewHTML;
+        
+        // Update drop zone
         const content = this.elements.fileDropZone.querySelector('.drop-zone-content');
         if (content) {
             content.innerHTML = `
@@ -319,11 +377,52 @@ class ModernSchoolGallery {
                 <p>${files.length} file${files.length > 1 ? 's' : ''} selected</p>
                 <span>Ready to upload</span>
             `;
-            
-            // Reinitialize Lucide icons
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
+        }
+
+        // Store files for upload
+        this.selectedFiles = files;
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    removeFileFromPreview(index) {
+        if (!this.selectedFiles) return;
+        
+        this.selectedFiles.splice(index, 1);
+        
+        if (this.selectedFiles.length === 0) {
+            this.clearFileSelection();
+        } else {
+            this.updateFilePreview(this.selectedFiles);
+        }
+    }
+
+    clearFileSelection() {
+        this.selectedFiles = [];
+        
+        if (this.elements.filePreviewContainer) {
+            this.elements.filePreviewContainer.classList.add('hidden');
+        }
+        
+        if (this.elements.fileInput) {
+            this.elements.fileInput.value = '';
+        }
+        
+        // Reset drop zone
+        const content = this.elements.fileDropZone?.querySelector('.drop-zone-content');
+        if (content) {
+            content.innerHTML = `
+                <i data-lucide="upload-cloud"></i>
+                <p>Drop files here or click to browse</p>
+                <span>Supports images and videos (Max 10MB each)</span>
+            `;
+        }
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     }
 
@@ -332,8 +431,6 @@ class ModernSchoolGallery {
     // ===============================================================
     
     async apiCall(action, body = {}, method = 'GET') {
-        this.showGlobalLoading(true);
-        
         try {
             let response;
             
@@ -384,8 +481,6 @@ class ModernSchoolGallery {
             console.error('API Error:', error);
             this.showNotification('Error', error.message || 'An unexpected error occurred', 'error');
             return null;
-        } finally {
-            this.showGlobalLoading(false);
         }
     }
 
@@ -423,18 +518,6 @@ class ModernSchoolGallery {
         // Load section-specific data
         if (sectionName === 'upload') {
             this.loadUploadFolders();
-        }
-    }
-
-    showGlobalLoading(show) {
-        if (this.elements.globalLoading) {
-            this.elements.globalLoading.classList.toggle('hidden', !show);
-        }
-    }
-
-    showSpinner(show) {
-        if (this.elements.loadingSpinner) {
-            this.elements.loadingSpinner.classList.toggle('hidden', !show);
         }
     }
 
@@ -505,6 +588,12 @@ class ModernSchoolGallery {
                     e.preventDefault();
                     if (this.elements.searchInput) {
                         this.elements.searchInput.focus();
+                    }
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    if (this.isAuthenticated) {
+                        this.navigateToSection('upload');
                     }
                     break;
             }
@@ -678,10 +767,30 @@ class ModernSchoolGallery {
         const result = await this.apiCall('getStats');
         
         if (result && this.elements.totalPhotos) {
-            this.elements.totalPhotos.textContent = result.totalImages || '0';
-            this.elements.totalVideos.textContent = result.totalVideos || '0';
+            this.animateStatUpdate(this.elements.totalPhotos, result.totalImages || 0);
+            this.animateStatUpdate(this.elements.totalVideos, result.totalVideos || 0);
             this.elements.totalSize.textContent = result.totalSize || '0 MB';
         }
+    }
+
+    animateStatUpdate(element, targetValue) {
+        const startValue = parseInt(element.textContent) || 0;
+        const duration = 1000;
+        const startTime = performance.now();
+        
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const currentValue = Math.floor(startValue + (targetValue - startValue) * progress);
+            element.textContent = currentValue.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+        
+        requestAnimationFrame(animate);
     }
 
     populateOccasionSelect() {
@@ -800,6 +909,12 @@ class ModernSchoolGallery {
         }
     }
 
+    showSpinner(show) {
+        if (this.elements.loadingSpinner) {
+            this.elements.loadingSpinner.classList.toggle('hidden', !show);
+        }
+    }
+
     filterGallery(searchTerm) {
         if (!searchTerm) {
             this.filteredFiles = [...this.galleryFiles];
@@ -906,7 +1021,7 @@ class ModernSchoolGallery {
         // Add click listeners to gallery cards
         this.elements.galleryGrid.querySelectorAll('.gallery-card').forEach((card, index) => {
             card.addEventListener('click', (e) => {
-                if (!e.target.closest('.gallery-card-actions')) {
+                if (!e.target.closest('.gallery-card-actions') && !e.target.closest('.media-actions')) {
                     this.showLightbox(index);
                 }
             });
@@ -914,7 +1029,7 @@ class ModernSchoolGallery {
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    if (!e.target.closest('.gallery-card-actions')) {
+                    if (!e.target.closest('.gallery-card-actions') && !e.target.closest('.media-actions')) {
                         this.showLightbox(index);
                     }
                 }
@@ -949,6 +1064,9 @@ class ModernSchoolGallery {
         if (this.elements.lightboxVideo && !this.elements.lightboxVideo.paused) {
             this.elements.lightboxVideo.pause();
         }
+        
+        // Reset zoom
+        this.resetZoom();
     }
 
     navigateLightbox(direction) {
@@ -1020,6 +1138,9 @@ class ModernSchoolGallery {
         if (this.elements.lightboxNext) {
             this.elements.lightboxNext.disabled = this.filteredFiles.length <= 1;
         }
+        
+        // Reset zoom for new image
+        this.resetZoom();
     }
 
     downloadCurrentImage() {
@@ -1061,7 +1182,7 @@ class ModernSchoolGallery {
     }
 
     // ===============================================================
-    // File Upload
+    // Enhanced File Upload System
     // ===============================================================
     
     async loadUploadFolders() {
@@ -1100,7 +1221,7 @@ class ModernSchoolGallery {
         e.preventDefault();
         
         const folderId = this.elements.folderSelectUpload?.value;
-        const files = this.elements.fileInput?.files;
+        const files = this.selectedFiles;
         
         if (!folderId) {
             this.showNotification('Error', 'Please select a destination folder', 'error');
@@ -1112,81 +1233,212 @@ class ModernSchoolGallery {
             return;
         }
         
-        this.showUploadProgress(true);
-        this.updateUploadProgress(0, 'Preparing upload...');
+        if (this.uploadInProgress) {
+            this.showNotification('Warning', 'Upload already in progress', 'warning');
+            return;
+        }
+        
+        this.uploadInProgress = true;
+        this.currentUploadController = new AbortController();
+        
+        // Show upload progress panel
+        this.elements.uploadProgressPanel?.classList.remove('hidden');
+        
+        // Initialize progress
+        this.updateOverallProgress(0, 0, files.length);
+        this.initializeFileProgress(files);
+        
+        const results = [];
+        const startTime = Date.now();
+        let uploadedBytes = 0;
+        let totalBytes = files.reduce((sum, file) => sum + file.size, 0);
         
         try {
-            // Prepare files for batch upload
-            const fileDataArray = [];
-            const fileArray = Array.from(files);
-            
-            for (let i = 0; i < fileArray.length; i++) {
-                const file = fileArray[i];
-                this.updateUploadProgress(
-                    (i / fileArray.length) * 50,
-                    `Preparing ${file.name}...`
-                );
-                
-                const fileData = await this.fileToBase64(file);
-                fileDataArray.push({
-                    fileData,
-                    fileName: file.name,
-                    mimeType: file.type
-                });
-            }
-            
-            this.updateUploadProgress(60, 'Uploading files...');
-            
-            // Use batch upload for multiple files
-            let result;
-            if (fileDataArray.length === 1) {
-                result = await this.apiCall('uploadFile', {
-                    folderId,
-                    ...fileDataArray[0]
-                }, 'POST');
-                
-                if (result?.success) {
-                    result = {
-                        success: true,
-                        successCount: 1,
-                        totalFiles: 1,
-                        results: [result]
-                    };
+            for (let i = 0; i < files.length; i++) {
+                if (this.currentUploadController.signal.aborted) {
+                    throw new Error('Upload cancelled by user');
                 }
-            } else {
-                result = await this.apiCall('uploadMultipleFiles', {
-                    folderId,
-                    files: fileDataArray
-                }, 'POST');
-            }
-            
-            this.updateUploadProgress(100, 'Upload complete!');
-            this.showUploadProgress(false);
-            
-            if (result?.success) {
-                const { successCount, totalFiles } = result;
                 
-                if (successCount === totalFiles) {
-                    this.showNotification('Success', `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`, 'success');
-                } else {
-                    this.showNotification('Partial Success', `Uploaded ${successCount} of ${totalFiles} files`, 'warning');
+                const file = files[i];
+                this.updateFileProgress(i, 0, 'preparing', 'Preparing...');
+                
+                try {
+                    // Convert file to base64
+                    const fileData = await this.fileToBase64(file);
+                    this.updateFileProgress(i, 25, 'uploading', 'Uploading...');
+                    
+                    // Upload file
+                    const result = await this.apiCall('uploadFile', {
+                        folderId,
+                        fileData,
+                        fileName: file.name,
+                        mimeType: file.type
+                    }, 'POST');
+                    
+                    if (result?.success) {
+                        this.updateFileProgress(i, 100, 'success', 'Uploaded');
+                        results.push({ ...result, success: true, file });
+                        
+                        // Add to recent uploads
+                        this.addToRecentUploads({
+                            id: result.fileId,
+                            name: file.name,
+                            thumbnailUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+                            isVideo: file.type.startsWith('video/'),
+                            uploadDate: new Date().toISOString(),
+                            size: file.size
+                        });
+                    } else {
+                        throw new Error(result?.message || 'Upload failed');
+                    }
+                    
+                } catch (fileError) {
+                    console.error(`Error uploading ${file.name}:`, fileError);
+                    this.updateFileProgress(i, 0, 'error', fileError.message);
+                    results.push({ success: false, fileName: file.name, error: fileError.message });
                 }
-            } else {
-                this.showNotification('Upload Failed', 'Failed to upload files', 'error');
+                
+                uploadedBytes += file.size;
+                
+                // Update overall progress
+                const overallProgress = ((i + 1) / files.length) * 100;
+                const elapsedTime = Date.now() - startTime;
+                const uploadSpeed = uploadedBytes / (elapsedTime / 1000); // bytes per second
+                
+                this.updateOverallProgress(overallProgress, i + 1, files.length);
+                this.updateUploadSpeed(uploadSpeed);
             }
             
-            // Reset form
-            this.elements.uploadForm?.reset();
-            this.resetFileDropZone();
+            // Show completion message
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
             
-            // Reload gallery if we're viewing the uploaded folder
+            if (successCount === totalCount) {
+                this.showNotification('Upload Complete', `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`, 'success');
+            } else {
+                this.showNotification('Upload Partial', `Uploaded ${successCount} of ${totalCount} files`, 'warning');
+            }
+            
+            // Update stats and refresh gallery
+            await this.updateStats();
+            this.renderRecentUploads();
+            
             if (this.galleryFiles.length > 0) {
                 this.loadGallery();
             }
             
         } catch (error) {
-            this.showUploadProgress(false);
+            console.error('Upload error:', error);
             this.showNotification('Upload Failed', error.message, 'error');
+        } finally {
+            this.uploadInProgress = false;
+            this.currentUploadController = null;
+            
+            // Hide progress panel after 3 seconds
+            setTimeout(() => {
+                this.elements.uploadProgressPanel?.classList.add('hidden');
+            }, 3000);
+            
+            // Reset form
+            this.elements.uploadForm?.reset();
+            this.clearFileSelection();
+        }
+    }
+
+    initializeFileProgress(files) {
+        if (!this.elements.fileProgressList) return;
+        
+        const progressHTML = files.map((file, index) => {
+            const isVideo = file.type.startsWith('video/');
+            const fileSize = this.formatFileSize(file.size);
+            
+            return `
+                <div class="file-progress-item" data-index="${index}" id="file-progress-${index}">
+                    <div class="file-progress-header">
+                        <div class="file-progress-name" title="${file.name}">${file.name}</div>
+                        <div class="file-progress-status" id="file-status-${index}">
+                            <i data-lucide="clock"></i>
+                            <span>Waiting...</span>
+                        </div>
+                    </div>
+                    <div class="file-progress-bar-container">
+                        <div class="file-progress-bar" id="file-bar-${index}"></div>
+                    </div>
+                    <div class="file-meta">
+                        <span class="file-type">${isVideo ? 'Video' : 'Image'}</span>
+                        <span class="file-size">${fileSize}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        this.elements.fileProgressList.innerHTML = progressHTML;
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    updateFileProgress(index, percent, status, message) {
+        const fileItem = document.getElementById(`file-progress-${index}`);
+        const fileBar = document.getElementById(`file-bar-${index}`);
+        const fileStatus = document.getElementById(`file-status-${index}`);
+        
+        if (!fileItem || !fileBar || !fileStatus) return;
+        
+        // Update item class
+        fileItem.className = `file-progress-item ${status}`;
+        
+        // Update progress bar
+        fileBar.style.width = `${percent}%`;
+        
+        // Update status
+        const icons = {
+            waiting: 'clock',
+            preparing: 'loader',
+            uploading: 'upload',
+            success: 'check-circle',
+            error: 'x-circle'
+        };
+        
+        fileStatus.innerHTML = `
+            <i data-lucide="${icons[status] || 'clock'}"></i>
+            <span>${message}</span>
+        `;
+        
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    updateOverallProgress(percent, completed, total) {
+        if (this.elements.overallProgressBar) {
+            this.elements.overallProgressBar.style.width = `${percent}%`;
+            this.elements.overallProgressBar.setAttribute('aria-valuenow', percent);
+        }
+        
+        if (this.elements.overallPercentage) {
+            this.elements.overallPercentage.textContent = `${Math.round(percent)}%`;
+        }
+        
+        if (this.elements.uploadStats) {
+            this.elements.uploadStats.textContent = `${completed} of ${total} files uploaded`;
+        }
+    }
+
+    updateUploadSpeed(bytesPerSecond) {
+        if (!this.elements.uploadSpeed) return;
+        
+        const speed = this.formatFileSize(bytesPerSecond);
+        this.elements.uploadSpeed.textContent = `${speed}/s`;
+    }
+
+    cancelUpload() {
+        if (this.currentUploadController) {
+            this.currentUploadController.abort();
+            this.showNotification('Upload Cancelled', 'Upload process has been cancelled', 'warning');
         }
     }
 
@@ -1199,74 +1451,69 @@ class ModernSchoolGallery {
         });
     }
 
-    async uploadSingleFile(file, folderId, index, total) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            
-            reader.onload = async (e) => {
-                try {
-                    const fileData = e.target.result;
-                    
-                    this.updateUploadProgress(
-                        ((index + 1) / total) * 100,
-                        `Uploading ${file.name}...`
-                    );
-                    
-                    const result = await this.apiCall('uploadFile', {
-                        folderId,
-                        fileData,
-                        fileName: file.name,
-                        mimeType: file.type
-                    }, 'POST');
-                    
-                    resolve(result);
-                    
-                } catch (error) {
-                    console.error(`Failed to upload ${file.name}:`, error);
-                    resolve({ success: false, error: error.message });
-                }
-            };
-            
-            reader.onerror = () => {
-                resolve({ success: false, error: 'Failed to read file' });
-            };
-            
-            reader.readAsDataURL(file);
-        });
+    // ===============================================================
+    // Recent Uploads Management
+    // ===============================================================
+    
+    addToRecentUploads(uploadInfo) {
+        // Add to beginning of array
+        this.recentUploads.unshift(uploadInfo);
+        
+        // Keep only last 20 uploads
+        this.recentUploads = this.recentUploads.slice(0, 20);
+        
+        // Save to localStorage
+        localStorage.setItem('recentUploads', JSON.stringify(this.recentUploads));
+        
+        // Re-render recent uploads
+        this.renderRecentUploads();
     }
 
-    showUploadProgress(show) {
-        if (this.elements.uploadProgressContainer) {
-            this.elements.uploadProgressContainer.classList.toggle('hidden', !show);
-        }
-    }
-
-    updateUploadProgress(percent, status) {
-        if (this.elements.uploadProgressBar) {
-            this.elements.uploadProgressBar.style.width = `${percent}%`;
-            this.elements.uploadProgressBar.setAttribute('aria-valuenow', percent);
+    renderRecentUploads() {
+        if (!this.elements.recentUploadsGrid) return;
+        
+        if (this.recentUploads.length === 0) {
+            this.elements.recentUploadsGrid.innerHTML = `
+                <div class="recent-uploads-empty">
+                    <i data-lucide="upload" aria-hidden="true"></i>
+                    <p>No recent uploads</p>
+                </div>
+            `;
+        } else {
+            const recentHTML = this.recentUploads.map((upload, index) => `
+                <div class="recent-upload-item" onclick="gallery.viewRecentUpload('${upload.id}')" role="button" tabindex="0" aria-label="View ${upload.name}">
+                    ${upload.thumbnailUrl ? `
+                        <img src="${upload.thumbnailUrl}" alt="${upload.name}" class="recent-upload-thumb">
+                    ` : `
+                        <div class="recent-upload-thumb placeholder">
+                            <i data-lucide="${upload.isVideo ? 'video' : 'image'}"></i>
+                        </div>
+                    `}
+                    <div class="recent-upload-overlay">
+                        <div class="recent-upload-info">${upload.name}</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            this.elements.recentUploadsGrid.innerHTML = recentHTML;
         }
         
-        if (this.elements.uploadStatus) {
-            this.elements.uploadStatus.textContent = status;
+        // Reinitialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     }
 
-    resetFileDropZone() {
-        if (this.elements.fileDropZone) {
-            const content = this.elements.fileDropZone.querySelector('.drop-zone-content');
-            if (content) {
-                content.innerHTML = `
-                    <i data-lucide="upload-cloud"></i>
-                    <p>Drop files here or click to browse</p>
-                    <span>Supports images and videos (Max 10MB each)</span>
-                `;
-                
-                // Reinitialize Lucide icons
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+    viewRecentUpload(fileId) {
+        // Find the file in current gallery or load it
+        const file = this.galleryFiles.find(f => f.id === fileId);
+        if (file) {
+            const index = this.filteredFiles.findIndex(f => f.id === fileId);
+            if (index !== -1) {
+                this.showLightbox(index);
             }
+        } else {
+            this.showNotification('Info', 'This file may be in a different album', 'info');
         }
     }
 
@@ -1351,6 +1598,11 @@ class ModernSchoolGallery {
             this.filteredFiles = this.filteredFiles.filter(f => f.id !== fileId);
             this.renderGallery(this.filteredFiles);
             
+            // Remove from recent uploads
+            this.recentUploads = this.recentUploads.filter(u => u.id !== fileId);
+            localStorage.setItem('recentUploads', JSON.stringify(this.recentUploads));
+            this.renderRecentUploads();
+            
             // Update stats
             this.updateStats();
         }
@@ -1374,6 +1626,18 @@ class ModernSchoolGallery {
             this.filteredFiles = [];
             this.renderGallery([]);
         }
+    }
+
+    // ===============================================================
+    // Utility Functions
+    // ===============================================================
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 }
 
@@ -1424,11 +1688,3 @@ window.addEventListener('offline', () => {
         window.gallery.showNotification('Connection Lost', 'You are currently offline', 'warning');
     }
 });
-
-// Service Worker registration (optional, for future PWA features)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Can be implemented later for offline functionality
-    });
-}
-
