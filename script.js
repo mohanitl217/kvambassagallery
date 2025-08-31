@@ -2,11 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     // CONFIGURATION
     // ===============================================================
-    // ❗ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+    //
+    //  ❗❗❗ CRITICAL: PASTE YOUR WEB APP URL HERE ❗❗❗
+    //  This is the URL you get after deploying your Google Apps Script.
+    //  If this is wrong, NOTHING WILL WORK.
+    //
     const API_URL = 'https://script.google.com/macros/s/AKfycbz4cuJPjpo3ww7vTmJso-BK6doOW1x1C2KqpHp1KawmmvHZaZ68yN0P2E37rHzJSRgHkQ/exec';
     
     // ===============================================================
-    // STATE & DOM ELEMENTS
+    // STATE & DOM ELEMENTS (No changes in this section)
     // ===============================================================
     let folderTree = null;
     const sessionToken = sessionStorage.getItem('adminToken');
@@ -22,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const emptyMessage = document.getElementById('empty-message');
     const searchInput = document.getElementById('search-input');
     
-    // Auth elements
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
@@ -30,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLogout = document.getElementById('nav-logout');
     const navUpload = document.getElementById('nav-upload');
 
-    // Upload elements
     const uploadForm = document.getElementById('upload-form');
     const folderSelectUpload = document.getElementById('folder-select-upload');
     const fileInput = document.getElementById('file-input');
@@ -38,16 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressBar = document.getElementById('upload-progress-bar');
     const uploadStatus = document.getElementById('upload-status');
     
-    // Modals
     const lightboxModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
     const videoModal = new bootstrap.Modal(document.getElementById('videoModal'));
     
-    // Toast notifications
     const toastElement = document.getElementById('notification-toast');
     const toast = new bootstrap.Toast(toastElement);
 
     // ===============================================================
-    // INITIALIZATION
+    // INITIALIZATION (No changes in this section)
     // ===============================================================
     init();
 
@@ -62,10 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===============================================================
-    // EVENT LISTENERS
+    // EVENT LISTENERS (No changes in this section)
     // ===============================================================
     function setupEventListeners() {
-        // Navigation
         navLinks.forEach(link => {
             if (!link.parentElement.id?.includes('logout')) {
                 link.addEventListener('click', (e) => {
@@ -75,14 +74,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Gallery filters (UPDATED LOGIC)
         occasionSelect.addEventListener('change', () => {
             populateYearSelect();
             viewAlbumBtn.disabled = !occasionSelect.value;
         });
         yearSelect.addEventListener('change', () => {
             populateSubfolderSelect();
-            viewAlbumBtn.disabled = !occasionSelect.value; // Still depends on occasion being selected
+            viewAlbumBtn.disabled = !occasionSelect.value;
         });
         subfolderSelect.addEventListener('change', () => {
             viewAlbumBtn.disabled = !occasionSelect.value;
@@ -90,28 +88,28 @@ document.addEventListener('DOMContentLoaded', () => {
         viewAlbumBtn.addEventListener('click', loadGallery);
         searchInput.addEventListener('input', filterGallery);
 
-        // Auth
         loginForm.addEventListener('submit', handleLogin);
         navLogout.addEventListener('click', handleLogout);
 
-        // Upload
         uploadForm.addEventListener('submit', handleUpload);
 
-        // Theme toggle
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
         
-        // Stop video when modal is closed
         document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
             document.getElementById('video-player').pause();
         });
     }
 
     // ===============================================================
-    // API CALLS
+    // API CALLS (IMPROVED FOR BETTER ERROR HANDLING)
     // ===============================================================
     async function apiCall(action, body = {}, method = 'GET') {
         showSpinner(true);
         try {
+            if (!API_URL || API_URL === 'YOUR_GAS_WEB_APP_URL') {
+                throw new Error("API_URL is not configured in script.js.");
+            }
+
             let response;
             if (method === 'GET') {
                 const params = new URLSearchParams(body);
@@ -124,25 +122,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 response = await fetch(API_URL, {
                     method: 'POST',
                     mode: 'cors',
-                    redirect: "follow",
+                    redirect: 'follow',
                     body: JSON.stringify(body),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 });
             }
             
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Network error. Server responded with status: ${response.status}`);
             }
             
-            const result = await response.json();
-            
-            if (result.error) {
-                throw new Error(result.message || 'An unknown error occurred.');
+            const textResponse = await response.text();
+            try {
+                const jsonResponse = JSON.parse(textResponse);
+                if (jsonResponse.error) {
+                    throw new Error(jsonResponse.message || 'An unknown server error occurred.');
+                }
+                return jsonResponse;
+            } catch (e) {
+                console.error("Failed to parse JSON. Server response:", textResponse);
+                throw new Error("Invalid response from server. It might be a configuration or permission issue. Check browser console (F12) for details.");
             }
-            return result;
         } catch (error) {
             console.error('API Call Error:', error);
-            showNotification('Error', `Failed to communicate with the server: ${error.message}`, 'danger');
+            showNotification('Error', `Communication Failure: ${error.message}`, 'danger');
             return null;
         } finally {
             showSpinner(false);
@@ -154,12 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===============================================================
     function navigateToSection(hash) {
         const targetId = hash.substring(1);
-        sections.forEach(section => {
-            section.classList.toggle('d-none', section.id !== targetId);
-        });
-        navLinks.forEach(link => {
-            link.classList.toggle('active', link.getAttribute('href') === hash);
-        });
+        sections.forEach(section => section.classList.toggle('d-none', section.id !== targetId));
+        navLinks.forEach(link => link.classList.toggle('active', link.getAttribute('href') === hash));
         window.location.hash = hash;
     }
 
@@ -170,10 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function showNotification(title, message, type = 'success') {
         const toastTitle = document.getElementById('toast-title');
         const toastBody = document.getElementById('toast-body');
-        
-        toastElement.className = 'toast'; // Reset classes
+        toastElement.className = 'toast';
         toastElement.classList.add(`bg-${type}`, 'text-white');
-        
         toastTitle.textContent = title;
         toastBody.textContent = message;
         toast.show();
@@ -214,17 +211,15 @@ document.addEventListener('DOMContentLoaded', () => {
             loginError.classList.add('d-none');
             showNotification('Success', 'Logged in successfully!');
         } else {
-            loginError.textContent = result ? result.message : 'Login failed.';
+            loginError.textContent = (result && result.message) ? result.message : 'Login failed. Check API URL and deployment settings.';
             loginError.classList.remove('d-none');
         }
     }
 
     async function handleLogout() {
         const token = sessionStorage.getItem('adminToken');
-        if (token) {
-            await apiCall('logout', { token }, 'POST');
-            sessionStorage.removeItem('adminToken');
-        }
+        if (token) await apiCall('logout', { token }, 'POST');
+        sessionStorage.removeItem('adminToken');
         updateAdminUI(false);
         showNotification('Logged Out', 'You have been logged out.');
         navigateToSection('#home');
@@ -241,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // ===============================================================
-    // GALLERY LOGIC (UPDATED)
+    // GALLERY & UPLOAD LOGIC (No changes in these sections)
     // ===============================================================
     async function fetchFolderTree() {
         const data = await apiCall('getFolderTree', {}, 'GET');
@@ -269,9 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yearSelect.disabled = true;
         subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>';
         subfolderSelect.disabled = true;
-
         if (!occasionId) return;
-
         const occasion = folderTree.children.find(o => o.id === occasionId);
         if (occasion && occasion.children) {
             occasion.children.forEach(year => {
@@ -289,9 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const yearId = yearSelect.value;
         subfolderSelect.innerHTML = '<option value="">-- Any Album --</option>';
         subfolderSelect.disabled = true;
-
         if (!yearId) return;
-
         const occasion = folderTree.children.find(o => o.id === occasionId);
         const year = occasion.children.find(y => y.id === yearId);
         if (year && year.children) {
@@ -309,23 +300,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const albumId = subfolderSelect.value;
         const yearId = yearSelect.value;
         const occasionId = occasionSelect.value;
-        
-        // Prioritize the most specific folder ID available
         let targetFolderId = albumId || yearId || occasionId;
-        
         if (!targetFolderId) {
             showNotification('Info', 'Please select at least an occasion.', 'warning');
             return;
         }
-
-        // Use 'getFiles' for a specific album, otherwise get all files recursively
         const action = albumId ? 'getFiles' : 'getFilesRecursive';
-
         galleryGrid.innerHTML = '';
         emptyMessage.classList.add('d-none');
-        
         const files = await apiCall(action, { folderId: targetFolderId }, 'GET');
-        
         if (files && files.length > 0) {
             files.sort((a, b) => a.name.localeCompare(b.name));
             files.forEach(file => renderGalleryCard(file));
@@ -339,45 +322,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const col = document.createElement('div');
         col.className = 'col-lg-3 col-md-4 col-sm-6';
         col.dataset.fileName = file.name.toLowerCase();
-
         const isImage = file.mimeType.startsWith('image/');
         const isVideo = file.mimeType.startsWith('video/');
-        let thumbnailHtml;
-
-        if (isImage) {
-            thumbnailHtml = `<img src="${file.downloadUrl}" class="card-img-top" alt="${file.name}" loading="lazy">`;
-        } else if (isVideo) {
-            thumbnailHtml = `<div class="file-icon"><i class="bi bi-film"></i></div>`;
-        } else {
-            thumbnailHtml = `<div class="file-icon"><i class="bi bi-file-earmark-text"></i></div>`;
-        }
-
-        col.innerHTML = `
-            <div class="card gallery-card">
-                <button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button>
-                <div class="card-img-container">
-                    ${thumbnailHtml}
-                </div>
-                <div class="card-body">
-                    <p class="card-title" title="${file.name}">${file.name}</p>
-                </div>
-            </div>
-        `;
-        
+        let thumbnailHtml = isImage ? `<img src="${file.downloadUrl}" class="card-img-top" alt="${file.name}" loading="lazy">`
+            : isVideo ? `<div class="file-icon"><i class="bi bi-film"></i></div>`
+            : `<div class="file-icon"><i class="bi bi-file-earmark-text"></i></div>`;
+        col.innerHTML = `<div class="card gallery-card"><button class="btn btn-danger btn-sm delete-btn d-none" data-id="${file.id}" data-name="${file.name}"><i class="bi bi-trash-fill"></i></button><div class="card-img-container">${thumbnailHtml}</div><div class="card-body"><p class="card-title" title="${file.name}">${file.name}</p></div></div>`;
         col.querySelector('.gallery-card').addEventListener('click', (e) => {
             if (e.target.closest('.delete-btn')) return;
             if (isImage) openLightbox(file);
             else if (isVideo) openVideoPlayer(file);
             else window.open(file.downloadUrl, '_blank');
         });
-
         col.querySelector('.delete-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
                 deleteFile(file.id, col);
             }
         });
-        
         galleryGrid.appendChild(col);
     }
     
@@ -416,27 +378,20 @@ document.addEventListener('DOMContentLoaded', () => {
         player.play();
     }
     
-    // ===============================================================
-    // UPLOAD LOGIC (UPDATED)
-    // ===============================================================
     function populateUploadFolderSelect() {
         folderSelectUpload.innerHTML = '<option value="">-- Select Destination Album --</option>';
         if (!folderTree || !folderTree.children) return;
-    
         folderTree.children.forEach(occasion => {
             occasion.children.forEach(year => {
-                // Only create a group if the year has albums (subfolders) in it
                 if (year.children && year.children.length > 0) {
                     const group = document.createElement('optgroup');
                     group.label = `${occasion.name} / ${year.name}`;
-                    
                     year.children.forEach(subfolder => {
                         const option = document.createElement('option');
                         option.value = subfolder.id;
                         option.textContent = subfolder.name;
                         group.appendChild(option);
                     });
-                    
                     folderSelectUpload.appendChild(group);
                 }
             });
@@ -447,52 +402,26 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const folderId = folderSelectUpload.value;
         const files = fileInput.files;
-
         if (!folderId || files.length === 0) {
             showNotification('Warning', 'Please select a destination folder and files to upload.', 'warning');
             return;
         }
-        
         progressContainer.classList.remove('d-none');
-        let successCount = 0;
-        let errorCount = 0;
-
+        let successCount = 0, errorCount = 0;
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const progress = Math.round(((i + 1) / files.length) * 100);
-            
             progressBar.style.width = `${progress}%`;
             progressBar.textContent = `${progress}%`;
             uploadStatus.textContent = `Uploading ${i + 1} of ${files.length}: ${file.name}`;
-            
             try {
                 const fileData = await readFileAsBase64(file);
-                const result = await apiCall('uploadFile', {
-                    folderId: folderId,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    fileData: fileData
-                }, 'POST');
-
-                if (result && result.success) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    console.error('Upload failed for:', file.name, result ? result.message : '');
-                }
-            } catch (err) {
-                errorCount++;
-                console.error('Upload failed for:', file.name, err);
-            }
+                const result = await apiCall('uploadFile', { folderId, fileName: file.name, mimeType: file.type, fileData }, 'POST');
+                if (result && result.success) successCount++; else errorCount++;
+            } catch (err) { errorCount++; }
         }
-        
         uploadStatus.textContent = `Upload complete. ${successCount} succeeded, ${errorCount} failed.`;
-        if (errorCount > 0) {
-            showNotification('Upload Complete', `Finished with ${errorCount} errors.`, 'warning');
-        } else {
-            showNotification('Upload Complete', `${successCount} files uploaded successfully.`, 'success');
-        }
-        
+        showNotification('Upload Complete', errorCount > 0 ? `Finished with ${errorCount} errors.` : `${successCount} files uploaded successfully.`, errorCount > 0 ? 'warning' : 'success');
         uploadForm.reset();
         setTimeout(() => progressContainer.classList.add('d-none'), 5000);
     }
