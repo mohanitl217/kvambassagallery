@@ -1,137 +1,1222 @@
-// ===============================================================
-// School Gallery Website - Backend (Google Apps Script) - UPDATED
-// ===============================================================
+/* ===============================================================
+   Modern School Gallery - Enhanced Styles
+   =============================================================== */
 
-const ROOT_FOLDER_ID = '1MUx0kA4SqrYl8reKE1mwBs2kRpeQzt3F'; // ❗ PASTE YOUR GOOGLE DRIVE FOLDER ID HERE
+:root {
+  /* Color System */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+  
+  --secondary-50: #f0fdf4;
+  --secondary-500: #22c55e;
+  --secondary-600: #16a34a;
+  
+  --accent-500: #f59e0b;
+  --accent-600: #d97706;
+  
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  
+  /* Neutral Colors */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  
+  /* Borders */
+  --border-radius: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-full: 9999px;
+  
+  /* Transitions */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-// --- Credentials ---
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123';
+/* Dark theme overrides */
+[data-theme="dark"] {
+  --gray-50: #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #64748b;
+  --gray-500: #94a3b8;
+  --gray-600: #cbd5e1;
+  --gray-700: #e2e8f0;
+  --gray-800: #f1f5f9;
+  --gray-900: #f8fafc;
+}
 
-// --- Web App Entry Points ---
+/* ===============================================================
+   Base Styles
+   =============================================================== */
 
-function doGet(e) {
-  const action = e.parameter.action;
-  let response;
-  try {
-    const folderId = e.parameter.folderId;
-    if (action === 'getFolderTree') {
-      response = getFolderStructure(ROOT_FOLDER_ID);
-    } else if (action === 'getFiles') {
-      if (!folderId) throw new Error("Folder ID is required.");
-      response = listFiles(folderId);
-    } else if (action === 'getFilesRecursive') {
-      if (!folderId) throw new Error("Folder ID is required.");
-      response = getFilesRecursive(folderId);
-    } else {
-      throw new Error("Invalid GET action.");
-    }
-    return createJsonResponse(response);
-  } catch (error) {
-    return createJsonResponse({ error: true, message: error.message });
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--primary-50) 100%);
+  color: var(--gray-800);
+  line-height: 1.6;
+  transition: var(--transition);
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+/* ===============================================================
+   Navigation
+   =============================================================== */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--gray-200);
+  padding: var(--space-4) 0;
+  z-index: 1000;
+  transition: var(--transition);
+}
+
+[data-theme="dark"] .navbar {
+  background: rgba(15, 23, 42, 0.8);
+  border-bottom-color: var(--gray-700);
+}
+
+.navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--primary-700);
+  text-decoration: none;
+}
+
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--border-radius);
+  color: var(--gray-600);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background: var(--gray-100);
+  color: var(--primary-600);
+}
+
+.nav-link.active {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+.theme-toggle {
+  padding: var(--space-2);
+  border: none;
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.theme-toggle:hover {
+  background: var(--gray-200);
+  color: var(--primary-600);
+}
+
+/* ===============================================================
+   Sections & Layout
+   =============================================================== */
+
+.main-content {
+  min-height: calc(100vh - 80px);
+}
+
+.section {
+  display: none;
+  padding: var(--space-8) 0;
+}
+
+.section.active {
+  display: block;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: var(--space-12);
+  color: var(--gray-800);
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===============================================================
+   Hero Section
+   =============================================================== */
+
+.hero {
+  position: relative;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg);
+  margin: var(--space-8) var(--space-6);
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 50%, var(--accent-500) 100%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.hero-content {
+  text-align: center;
+  max-width: 600px;
+  padding: var(--space-8);
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: var(--space-6);
+  background: linear-gradient(135deg, var(--primary-700), var(--primary-900));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: var(--gray-600);
+  margin-bottom: var(--space-8);
+  line-height: 1.6;
+}
+
+/* ===============================================================
+   Buttons
+   =============================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--gray-500), var(--gray-600));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--secondary-500), var(--secondary-600));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--secondary-600), var(--secondary-500));
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--gray-600);
+  border: 1px solid var(--gray-300);
+}
+
+.btn-ghost:hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.btn-large {
+  padding: var(--space-4) var(--space-8);
+  font-size: 1.125rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* ===============================================================
+   Gallery Controls
+   =============================================================== */
+
+.gallery-controls {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="dark"] .gallery-controls {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: var(--gray-700);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.search-row {
+  display: flex;
+  justify-content: center;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.875rem;
+}
+
+.select-input,
+.text-input {
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  background: white;
+  color: var(--gray-800);
+  font-size: 0.875rem;
+  transition: var(--transition);
+}
+
+.select-input:focus,
+.text-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.select-input:disabled {
+  background: var(--gray-100);
+  color: var(--gray-500);
+  cursor: not-allowed;
+}
+
+.search-input-wrapper {
+  position: relative;
+  max-width: 400px;
+  width: 100%;
+}
+
+.search-input-wrapper svg {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-12);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-full);
+  background: white;
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===============================================================
+   Gallery Grid
+   =============================================================== */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.gallery-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition-slow);
+  box-shadow: var(--shadow);
+}
+
+[data-theme="dark"] .gallery-card {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--gray-700);
+}
+
+.gallery-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+}
+
+.gallery-media-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--gray-100);
+}
+
+.gallery-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition-slow);
+}
+
+.gallery-card:hover .gallery-media {
+  transform: scale(1.05);
+}
+
+.video-thumbnail {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border-radius: var(--border-radius-full);
+  padding: var(--space-4);
+  color: white;
+  transition: var(--transition);
+}
+
+.gallery-card:hover .video-overlay {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.video-placeholder,
+.file-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--gray-100);
+  color: var(--gray-400);
+}
+
+.gallery-card-info {
+  padding: var(--space-4);
+}
+
+.gallery-card-title {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.delete-btn {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--error-500);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--space-2);
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 10;
+  opacity: 0;
+}
+
+.gallery-card:hover .delete-btn:not(.hidden) {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background: var(--error-600);
+  transform: scale(1.1);
+}
+
+/* ===============================================================
+   Upload Section
+   =============================================================== */
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-8);
+}
+
+.upload-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition);
+}
+
+[data-theme="dark"] .upload-card {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--gray-700);
+}
+
+.upload-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-header {
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+[data-theme="dark"] .card-header {
+  background: var(--gray-800);
+  border-bottom-color: var(--gray-700);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.upload-form {
+  padding: var(--space-6);
+}
+
+.form-group {
+  margin-bottom: var(--space-6);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.875rem;
+}
+
+.file-drop-zone {
+  position: relative;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-8);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+}
+
+.file-drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--gray-600);
+}
+
+.drop-zone-content p {
+  font-weight: 600;
+  margin: 0;
+}
+
+.drop-zone-content span {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.progress-container {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  background: var(--gray-50);
+  border-radius: var(--border-radius);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+  border-radius: var(--border-radius-full);
+  transition: width 0.3s ease;
+}
+
+.progress-status {
+  text-align: center;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin: 0;
+}
+
+/* ===============================================================
+   About Section
+   =============================================================== */
+
+.about-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.about-text {
+  margin-bottom: var(--space-12);
+}
+
+.about-text p {
+  font-size: 1.125rem;
+  color: var(--gray-600);
+  margin-bottom: var(--space-6);
+  line-height: 1.8;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-6);
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+[data-theme="dark"] .stat-card {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--gray-700);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+/* ===============================================================
+   Modals
+   =============================================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--gray-800);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .modal-header {
+  background: var(--gray-900);
+  border-bottom-color: var(--gray-700);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--border-radius);
+  color: var(--gray-500);
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--gray-200);
+  color: var(--gray-700);
+}
+
+.login-form {
+  padding: var(--space-6);
+}
+
+/* ===============================================================
+   Lightbox
+   =============================================================== */
+
+.lightbox-modal .modal-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+}
+
+.lightbox-content {
+  position: relative;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+[data-theme="dark"] .lightbox-content {
+  background: var(--gray-800);
+}
+
+.lightbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .lightbox-header {
+  background: var(--gray-900);
+  border-bottom-color: var(--gray-700);
+}
+
+.lightbox-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.lightbox-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: black;
+}
+
+.lightbox-media-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  max-height: 70vh;
+}
+
+.lightbox-media {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border: none;
+  color: white;
+  padding: var(--space-4);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 10;
+}
+
+.lightbox-nav:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.lightbox-prev {
+  left: var(--space-4);
+}
+
+.lightbox-next {
+  right: var(--space-4);
+}
+
+/* ===============================================================
+   Loading & Empty States
+   =============================================================== */
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-20);
+  color: var(--gray-600);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top: 3px solid var(--primary-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-20);
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.empty-state h3 {
+  font-weight: 600;
+  color: var(--gray-700);
+  margin: 0;
+}
+
+.empty-state p {
+  margin: 0;
+  max-width: 400px;
+}
+
+/* ===============================================================
+   Toast Notifications
+   =============================================================== */
+
+.toast {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  max-width: 400px;
+  z-index: 3000;
+  animation: slideInRight 0.3s ease;
+}
+
+[data-theme="dark"] .toast {
+  background: var(--gray-800);
+  border-color: var(--gray-700);
+}
+
+.toast-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  margin-top: var(--space-1);
+}
+
+.toast-success {
+  border-left: 4px solid var(--secondary-500);
+}
+
+.toast-success .toast-icon {
+  color: var(--secondary-500);
+}
+
+.toast-error {
+  border-left: 4px solid var(--error-500);
+}
+
+.toast-error .toast-icon {
+  color: var(--error-500);
+}
+
+.toast-warning {
+  border-left: 4px solid var(--warning-500);
+}
+
+.toast-warning .toast-icon {
+  color: var(--warning-500);
+}
+
+.toast-text {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: var(--space-1);
+}
+
+.toast-message {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1);
+  color: var(--gray-400);
+  transition: var(--transition);
+}
+
+.toast-close:hover {
+  color: var(--gray-600);
+}
+
+.error-message {
+  background: var(--error-50);
+  border: 1px solid var(--error-200);
+  border-radius: var(--border-radius);
+  padding: var(--space-4);
+  color: var(--error-700);
+  font-size: 0.875rem;
+  margin-top: var(--space-4);
+}
+
+/* ===============================================================
+   Utility Classes
+   =============================================================== */
+
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===============================================================
+   Animations
+   =============================================================== */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-function doPost(e) {
-  const requestData = JSON.parse(e.postData.contents);
-  const action = requestData.action;
-  let response;
-  try {
-    if (action === 'login') {
-      response = handleLogin(requestData.username, requestData.password);
-    } else if (action === 'checkSession' || action === 'logout') {
-      response = checkAuth(requestData.token) ? handleLogout(requestData.token) : { success: false };
-    } else if (checkAuth(requestData.token)) {
-      if (action === 'uploadFile') response = handleFileUpload(requestData);
-      else if (action === 'createFolder') response = createNewFolder(requestData.parentFolderId, requestData.folderName);
-      else if (action === 'deleteFile') response = deleteItem(requestData.id, 'file');
-      else if (action === 'deleteFolder') response = deleteItem(requestData.id, 'folder');
-      else throw new Error("Invalid admin action.");
-    } else {
-      throw new Error("Authentication failed.");
-    }
-    return createJsonResponse(response);
-  } catch (error) {
-    return createJsonResponse({ error: true, message: error.message });
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-function createJsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-// ===============================================================
-//  Authentication & Session Management
-// ===============================================================
-function handleLogin(username, password) { if (username === ADMIN_USER && password === ADMIN_PASS) { const token = Utilities.getUuid(); PropertiesService.getUserProperties().setProperty(token, 'admin'); return { success: true, token: token }; } return { success: false, message: "Invalid credentials." }; }
-function handleLogout(token) { if (token) PropertiesService.getUserProperties().deleteProperty(token); return { success: true }; }
-function checkAuth(token) { return token && PropertiesService.getUserProperties().getProperty(token) === 'admin'; }
+/* ===============================================================
+   Responsive Design
+   =============================================================== */
 
-// ===============================================================
-// Google Drive API Functions (UPDATED FOR THUMBNAILS)
-// ===============================================================
-const FILE_FIELDS = "id, name, mimeType, thumbnailLink, webViewLink";
-
-function getFileMetadata(file) {
-    const fileId = file.getId();
-    try {
-        // Use the advanced Drive API to get thumbnail links
-        const metadata = Drive.Files.get(fileId, { fields: FILE_FIELDS });
-        return {
-            id: fileId,
-            name: file.getName(),
-            mimeType: file.getMimeType(),
-            downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
-            // Use a direct image view link for the main content
-            viewUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
-            thumbnailUrl: metadata.thumbnailLink || null // The crucial thumbnail link
-        };
-    } catch (e) {
-        // Fallback if API fails for any reason
-        return {
-            id: fileId,
-            name: file.getName(),
-            mimeType: file.getMimeType(),
-            downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
-            viewUrl: `https://lh3.googleusercontent.com/d/${fileId}`,
-            thumbnailUrl: null
-        };
-    }
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--space-4);
+  }
+  
+  .navbar-menu {
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  
+  .nav-link {
+    padding: var(--space-2) var(--space-3);
+    font-size: 0.875rem;
+  }
+  
+  .hero {
+    margin: var(--space-4);
+    min-height: 60vh;
+  }
+  
+  .hero-content {
+    padding: var(--space-6);
+  }
+  
+  .section-title {
+    font-size: 2rem;
+    margin-bottom: var(--space-8);
+  }
+  
+  .gallery-controls {
+    padding: var(--space-4);
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--space-4);
+  }
+  
+  .upload-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+  
+  .lightbox-nav {
+    padding: var(--space-3);
+  }
+  
+  .toast {
+    bottom: var(--space-4);
+    right: var(--space-4);
+    left: var(--space-4);
+    max-width: none;
+  }
 }
 
-function listFiles(folderId) {
-    const folder = DriveApp.getFolderById(folderId);
-    const files = folder.getFiles();
-    const fileList = [];
-    while (files.hasNext()) {
-        fileList.push(getFileMetadata(files.next()));
-    }
-    return fileList;
+@media (max-width: 480px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-3);
+  }
+  
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
 }
 
-function traverseAndCollectFiles(folder, fileList) {
-    const files = folder.getFiles();
-    while (files.hasNext()) {
-        fileList.push(getFileMetadata(files.next()));
-    }
-    const subFolders = folder.getFolders();
-    while (subFolders.hasNext()) {
-        traverseAndCollectFiles(subFolders.next(), fileList);
-    }
+/* ===============================================================
+   High DPI & Retina Support
+   =============================================================== */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .gallery-media {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
 }
-
-function getFilesRecursive(folderId) {
-    const rootFolder = DriveApp.getFolderById(folderId);
-    const allFiles = [];
-    traverseAndCollectFiles(rootFolder, allFiles);
-    return allFiles;
-}
-
-// --- Folder Structure (No changes here) ---
-function getFolderStructure(folderId) { /* ... NO CHANGE TO THIS FUNCTION ... */ const rootFolder = DriveApp.getFolderById(folderId); const tree = { id: rootFolder.getId(), name: rootFolder.getName(), children: [] }; const occasionFolders = rootFolder.getFolders(); while (occasionFolders.hasNext()) { const occasionFolder = occasionFolders.next(); const occasionNode = { id: occasionFolder.getId(), name: occasionFolder.getName(), children: [] }; const yearFolders = occasionFolder.getFolders(); while (yearFolders.hasNext()) { const yearFolder = yearFolders.next(); const yearNode = { id: yearFolder.getId(), name: yearFolder.getName(), children: [] }; const subFolders = yearFolder.getFolders(); while (subFolders.hasNext()) { const subFolder = subFolders.next(); yearNode.children.push({ id: subFolder.getId(), name: subFolder.getName() }); } occasionNode.children.push(yearNode); } tree.children.push(occasionNode); } return tree; }
-
-// --- Modifying Data (No changes here) ---
-function handleFileUpload(data) { /* ... NO CHANGE TO THIS FUNCTION ... */ const { folderId, fileData, fileName, mimeType } = data; if (!folderId || !fileData || !fileName) throw new Error("Missing data for file upload."); const destinationFolder = DriveApp.getFolderById(folderId); const decodedData = Utilities.base64Decode(fileData.split(',')[1]); const blob = Utilities.newBlob(decodedData, mimeType, fileName); const newFile = destinationFolder.createFile(blob); logActivity(`File Uploaded: "${fileName}" to folder ID ${folderId}`); return { success: true, fileId: newFile.getId(), fileName: newFile.getName() }; }
-function createNewFolder(parentFolderId, folderName) { /* ... NO CHANGE TO THIS FUNCTION ... */ const parentFolder = DriveApp.getFolderById(parentFolderId); const newFolder = parentFolder.createFolder(folderName); logActivity(`Folder Created: "${folderName}" in parent ID ${parentFolderId}`); return { success: true, folderId: newFolder.getId(), folderName: newFolder.getName() }; }
-function deleteItem(id, type) { /* ... NO CHANGE TO THIS FUNCTION ... */ try { let name; if (type === 'file') { const file = DriveApp.getFileById(id); name = file.getName(); file.setTrashed(true); logActivity(`File Deleted: "${name}" (ID: ${id})`); } else if (type === 'folder') { const folder = DriveApp.getFolderById(id); name = folder.getName(); folder.setTrashed(true); logActivity(`Folder Deleted: "${name}" (ID: ${id})`); } else { throw new Error("Invalid item type for deletion."); } return { success: true, message: `${type} "${name}" deleted successfully.` }; } catch (e) { throw new Error(`Failed to delete ${type}: ${e.message}`); } }
-function logActivity(message) { /* ... NO CHANGE TO THIS FUNCTION ... */ try { const logSheetName = "ActivityLog"; const ss = SpreadsheetApp.openByUrl("YOUR_SPREADSHEET_URL_HERE") || SpreadsheetApp.create(logSheetName); let sheet = ss.getSheetByName(logSheetName); if (!sheet) { sheet = ss.insertSheet(logSheetName); sheet.appendRow(["Timestamp", "Activity"]); } sheet.appendRow([new Date(), message]); } catch (e) { console.error("Logging failed: " + e.message); } }
